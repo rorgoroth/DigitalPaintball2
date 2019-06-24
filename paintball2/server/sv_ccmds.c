@@ -825,7 +825,7 @@ void SV_Status_f (void)
 			Com_Printf("%4i ", ping);
 		}
 
-		strip_garbage(szCleanName, cl->name); // jitstatus
+		strip_garbage(szCleanName, cl->name, sizeof(szCleanName)); // jitstatus
 		szCleanName[16] = 0; // jitstatus
 		Com_Printf("%s", szCleanName); // jitstatus
 		l = 16 - strlen(szCleanName); // jitstatus

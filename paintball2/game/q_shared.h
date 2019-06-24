@@ -1478,6 +1478,6 @@ void Q_strncpyz (char *dest, const char *src, size_t size); // jitskm
 void Q_strncatz (char *dest, const char *src, size_t size);
 #endif
 void Q_strncpyzna (char *dest, const char *src, size_t size); // jit
-void strip_garbage (char *out, const char *in); // jit
+void strip_garbage (char *cout, const char *cin, size_t size_out); // jit
 
 #endif

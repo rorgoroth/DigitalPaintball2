@@ -1777,6 +1777,7 @@ static int IRC_AttemptConnection( )
 
 	// Force players to use a non-default name
 	strcpy( name, Cvar_VariableString( "name" ) );
+	strip_garbage(name, Cvar_VariableString("name"), sizeof(name));
 	if (! Q_strncasecmp( name , "player" , 7 ) ) {
 		Com_Printf("...IRC: rejected due to unset player name\n");
 		return IRC_CMD_FATAL;

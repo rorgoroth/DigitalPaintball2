@@ -106,7 +106,7 @@ void SV_BroadcastPrintf (int level, char *fmt, ...)
 
 		if (sv_noextascii && sv_noextascii->value)
 		{
-			strip_garbage(copy, string); // jit
+			strip_garbage(copy, string, sizeof(copy)); // jit
 			Com_Printf("%s", copy);
 		}
 		else

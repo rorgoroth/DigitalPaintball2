@@ -269,7 +269,7 @@ void Con_Dump_f (void)
 				break;
 		}
 
-		strip_garbage(buffer, buffer);
+		strip_garbage(buffer, buffer, sizeof(buffer));
 		fprintf(f, "%s\n", buffer);
 	}
 

@@ -2484,12 +2484,13 @@ static char char_remap[256] = {
 
 // strip out the garbage characters such as color codes
 // and map extended ascii to something readable...
-void strip_garbage (char *cout, const char *cin) // jit
+void strip_garbage (char *cout, const char *cin, size_t size_out) // jit b43
 {
 	register const unsigned char *s;
 	register unsigned char *sbuf;
 	unsigned char *out = (unsigned char *)cout; // stupid gcc warnings
 	unsigned char *in = (unsigned char *)cin;
+	register unsigned char *sbuf_max = out + size_out - 1;
 	int index;
 
 	for (sbuf = out, s = in; *s; ++s)
@@ -2509,6 +2510,13 @@ void strip_garbage (char *cout, const char *cin) // jit
 			assert(index >= 0 && index < 256);
 			*sbuf = char_remap[index];
 			++sbuf;
+			assert(sbuf < sbuf_max);
+
+			if (sbuf >= sbuf_max)
+			{
+				*sbuf = 0;
+				return;
+			}
 		}
 	}
 
