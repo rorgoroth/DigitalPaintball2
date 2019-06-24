@@ -123,7 +123,7 @@ static void StripNonAlphaNum (const char *sIn, char *sOut, size_t sizeOut)
 	int c;
 	char szNoGarbage[2048];
 
-	strip_garbage(szNoGarbage, sIn);
+	strip_garbage(szNoGarbage, sIn, sizeof(szNoGarbage));
 	sIn = szNoGarbage;
 
 	// strip non alpha-numeric characters from profile name
@@ -369,7 +369,7 @@ void CL_ProfileLogin_f (void)
 	{
 		if (memcmp(pFileContents, "PB2PROFILE1.0\0", 14) == 0)
 		{
-			strip_garbage(g_szUserName, pFileContents + 14);
+			strip_garbage(g_szUserName, pFileContents + 14, sizeof(g_szUserName));
 		}
 		else
 		{

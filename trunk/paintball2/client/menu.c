@@ -2774,10 +2774,12 @@ static char** listview_get_row_items (int columncount, char **buf)
 static int listview_compare(char* stra, char* strb, qboolean ascending)
 {
 	int result;
-	char * stripped_a = (char*) Z_Malloc(sizeof(char) * (strlen(stra) +1) );
-	char * stripped_b = (char*) Z_Malloc(sizeof(char) * (strlen(strb) +1) );
-	strip_garbage(stripped_a, stra);
-	strip_garbage(stripped_b, strb);
+	int strlena = strlen(stra);
+	int strlenb = strlen(strb);
+	char * stripped_a = (char*) Z_Malloc(sizeof(char) * (strlena + 1));
+	char * stripped_b = (char*) Z_Malloc(sizeof(char) * (strlenb + 1));
+	strip_garbage(stripped_a, stra, strlena + 1);
+	strip_garbage(stripped_b, strb, strlenb + 1);
 
 	if (strlen(stripped_a) > 0
 		&& strlen(stripped_b) > 0

@@ -162,6 +162,7 @@ static void update_serverlist_server (m_serverlist_server_t *server, char *info,
 {
 	char *s;
 	const char *servername;
+	int servernamelen = 0;
 
 	// start at end of string:
 	s = strlen(info) + info; 
@@ -217,7 +218,9 @@ static void update_serverlist_server (m_serverlist_server_t *server, char *info,
 	while (*servername == ' ') // skip leading spaces
 		++servername;
 
-	if (!server->servername || strlen(server->servername) < strlen(servername))
+	servernamelen = strlen(servername);
+
+	if (!server->servername || strlen(server->servername) < servernamelen)
 	{
 		if (server->servername)
 			Z_Free(server->servername);
@@ -225,7 +228,7 @@ static void update_serverlist_server (m_serverlist_server_t *server, char *info,
 		server->servername = text_copy(servername);
 	}
 
-	strip_garbage(server->servername, servername);
+	strip_garbage(server->servername, servername, servernamelen + 1);
 
 	// and the ping
 	server->ping = ping;
@@ -348,7 +351,7 @@ static char **create_listview_info(m_serverlist_server_t *server)
 
 	info = Z_Malloc(sizeof(char*) * LISTVIEW_COLUMN_COUNT); 
 
-	info[0] = CopyString(server->servername);
+	info[0] = CopyString(server->servername ? server->servername : "NULL");
 
 	// Fade ping color from white to orange (like co2 bar colors)
 	{
@@ -369,7 +372,7 @@ static char **create_listview_info(m_serverlist_server_t *server)
 	}
 	info[1] = CopyString(buffer);
 
-	info[2] = CopyString(server->mapname);
+	info[2] = CopyString(server->mapname ? server->mapname : "NULL");
 
 	Com_sprintf(buffer, sizeof(buffer), "%d/%d", server->players, server->maxplayers);
 	info[3] = CopyString(buffer);

@@ -902,8 +902,8 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s)
 		char oldname_noformat[MAX_QPATH];
 		char newname_noformat[MAX_QPATH];
 
-		strip_garbage(oldname_noformat, oldname);
-		strip_garbage(newname_noformat, ci->name);
+		strip_garbage(oldname_noformat, oldname, sizeof(oldname_noformat));
+		strip_garbage(newname_noformat, ci->name, sizeof(newname_noformat));
 
 		if (*oldname_noformat && *newname_noformat && Q_strcasecmp(newname_noformat, oldname_noformat))
 		{
