@@ -8,7 +8,7 @@
 
 #define INITIAL_SERVERLIST_SIZE 32
 #define UDP_SERVERLIST_PORT 27900
-#define LISTVIEW_COLUMN_COUNT 4
+#define SERVERLIST_LISTVIEW_COLUMN_COUNT 4
 
 // Local globals
 static pthread_mutex_t m_mut_serverlist;
@@ -349,7 +349,7 @@ static char **create_listview_info(m_serverlist_server_t *server)
 	char pingcolor;
 	char buffer[32]; //for creating the player count ("12/16")
 
-	info = Z_Malloc(sizeof(char*) * LISTVIEW_COLUMN_COUNT); 
+	info = Z_Malloc(sizeof(char*) * m_serverlist.listview_info_column_count); 
 
 	info[0] = CopyString(server->servername ? server->servername : "NULL");
 
@@ -429,6 +429,7 @@ static void NetAdrToString (netadr_t adr, char *strout, int sizeout)
 
 void M_AddToServerList (netadr_t adr, char *info, qboolean pinging)
 {
+	void free_listview_info_entry(char**, int);
 	int i;
 	char addrip[32];
 	int ping;
@@ -462,6 +463,7 @@ void M_AddToServerList (netadr_t adr, char *info, qboolean pinging)
 				else
 				{
 					Z_Free(m_serverlist.info[m_serverlist.server[i].remap]);
+					free_listview_info_entry(m_serverlist.listview_info[m_serverlist.server[i].remap], m_serverlist.listview_info_column_count);
 				}
 
 				m_serverlist.info[m_serverlist.server[i].remap] =
@@ -540,7 +542,8 @@ void M_AddToServerList (netadr_t adr, char *info, qboolean pinging)
 
 			m_serverlist.info[m_serverlist.nummapped] =
 				text_copy(format_info_from_serverlist_server(&m_serverlist.server[m_serverlist.numservers]));
-			m_serverlist.listview_info[m_serverlist.server[i].remap] =
+
+			m_serverlist.listview_info[m_serverlist.nummapped] =
 					create_listview_info(&m_serverlist.server[i]);
 
 			m_serverlist.server[m_serverlist.numservers].remap = m_serverlist.nummapped;
@@ -932,7 +935,8 @@ static void create_serverlist (int size)
 
 	memset(&m_serverlist, 0, sizeof(m_serverlist_t));
 	m_serverlist.actualsize = size;
-	m_serverlist.listview_info = Z_Malloc(sizeof(char**)*size); 
+	m_serverlist.listview_info = Z_Malloc(sizeof(char**)*size);
+	m_serverlist.listview_info_column_count = SERVERLIST_LISTVIEW_COLUMN_COUNT;
 	m_serverlist.info = Z_Malloc(sizeof(char*)*size); 
 	m_serverlist.ips = Z_Malloc(sizeof(char*)*size);
 	m_serverlist.server = Z_Malloc(sizeof(m_serverlist_server_t)*size);
@@ -1027,7 +1031,7 @@ static qboolean serverlist_load (void)
 			ptr = skip_string(ptr);
 
 			//xrichardx todo: I think this should be done in another way. Maybe the way the data is stored should be changed
-			m_serverlist.listview_info[i] = (char**)(Z_Malloc(sizeof(char*)*LISTVIEW_COLUMN_COUNT));
+			m_serverlist.listview_info[i] = (char**)(Z_Malloc(sizeof(char*)*m_serverlist.listview_info_column_count));
 			for (j = 0; j <m_serverlist.numservers; j++) //make sure we assign the information correctly
 			{
 				NetAdrToString(m_serverlist.server[j].adr, buffer, sizeof(buffer));
@@ -1245,10 +1249,16 @@ static void Serverlist_Sort (void)
 			{
 				NetAdrToString(m_serverlist.server[i].adr, addr, sizeof(addr));
 				m_serverlist.server[i].remap = remap;
+
 				Z_Free(m_serverlist.ips[remap]);
 				m_serverlist.ips[remap] = text_copy(addr);
+
 				Z_Free(m_serverlist.info[remap]);
 				m_serverlist.info[remap] = text_copy(format_info_from_serverlist_server(&m_serverlist.server[i]));
+
+				free_listview_info_entry(m_serverlist.listview_info[remap], m_serverlist.listview_info_column_count);
+				m_serverlist.listview_info[remap] = create_listview_info(&m_serverlist.server[i]);
+
 				++remap;
 			}
 		}

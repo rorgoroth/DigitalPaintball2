@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "client.h"
 
-#define LISTVIEW_COLUMN_COUNT 9
+#define SCORE_LISTVIEW_COLUMN_COUNT 9
 
 typedef struct cl_score_s {
 	int ping;
@@ -46,6 +46,7 @@ static qboolean cl_scores_modified;
 char **cl_scores_nums;
 char **cl_scores_info;
 char ***cl_scores_listview_info;
+int cl_scores_listview_column_count;
 int cl_scores_count;
 
 int splat(int teamnum) 
@@ -114,6 +115,7 @@ void init_cl_scores (void)
 	cl_scores_nums = Z_Malloc(sizeof(char*)*MAX_CLIENTS);
 	cl_scores_info = Z_Malloc(sizeof(char*)*MAX_CLIENTS);
 	cl_scores_listview_info = Z_Malloc(sizeof(char**)*MAX_CLIENTS);
+	cl_scores_listview_column_count = SCORE_LISTVIEW_COLUMN_COUNT;
 
 	for (i=0; i<MAX_CLIENTS; i++)
 	{
@@ -141,7 +143,7 @@ void shutdown_cl_scores (void) // jitodo
 	{
 		for (i = 0; i < MAX_CLIENTS && cl_scores_listview_info[i]; i++)
 		{
-			for(j = 0; j < LISTVIEW_COLUMN_COUNT && cl_scores_listview_info[i][j]; j++)
+			for(j = 0; j < cl_scores_listview_column_count && cl_scores_listview_info[i][j]; j++)
 				Z_Free(cl_scores_listview_info[i][j]);
 
 			Z_Free(cl_scores_listview_info[i]);
@@ -444,11 +446,11 @@ qboolean cl_scores_prep_listview_widget (void)
 		j = cl_sorted_scorelist[i];
 		Com_sprintf(cl_scores_nums[i], 4, "%d", j);
 
-		for(k = 0; k < LISTVIEW_COLUMN_COUNT && cl_scores_listview_info[i] && cl_scores_listview_info[i][k]; k++)
+		for(k = 0; k < cl_scores_listview_column_count && cl_scores_listview_info[i] && cl_scores_listview_info[i][k]; k++)
 			Z_Free(cl_scores_listview_info[i][k]);
 
 		if (!cl_scores_listview_info[i])
-			cl_scores_listview_info[i] = Z_Malloc(sizeof(char**) * LISTVIEW_COLUMN_COUNT);
+			cl_scores_listview_info[i] = Z_Malloc(sizeof(char**) * cl_scores_listview_column_count);
 
 		Com_sprintf(buffer, MAX_SCOREBOARD_STRING, "%c",
 			cl_scores[j].hasflag ? 25 : cl_scores[j].isalive ? 26 : ' ');

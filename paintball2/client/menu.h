@@ -302,6 +302,7 @@ typedef struct MENU_WIDGET_S {
 	char	***listview_source_list;
 	char	**listview_source_map;
 	int		listview_source_rowcount;
+	int		listview_source_column_count;
 
 	// Drawing Information
 	point_t widgetCorner;
@@ -353,6 +354,7 @@ typedef struct M_SERVERLIST_S {
 	char **ips;
 	char **info;
 	char ***listview_info; //contains list view table like content (array of rows, each row is an array of elements)
+	int listview_info_column_count;
 	qboolean sortthisframe;
 } m_serverlist_t;
 
@@ -371,6 +373,8 @@ extern cvar_t *cl_menuback;
 
 void *free_string_array(char *array[], int size);
 char *text_copy(const char *in);
+
+static menu_widget_t *find_widget_under_cursor (menu_widget_t *widget);
 
 extern pthread_mutex_t m_mut_widgets;
 
