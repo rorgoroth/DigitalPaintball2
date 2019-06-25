@@ -191,20 +191,11 @@ qboolean VID_CreateWindow (int width, int height, qboolean fullscreen)
 */
 void GL_UpdateSwapInterval (void);
 
-rserr_t GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
+rserr_t GLimp_SetMode (int *pwidth, int *pheight, int width, int height, qboolean fullscreen)
 {
-	int width, height;
 	const char *win_fs[] = { "W", "FS" };
 
 	ri.Con_Printf(PRINT_ALL, "Initializing OpenGL display.\n");
-	ri.Con_Printf(PRINT_ALL, "...setting mode %d:", mode);
-
-	if (!ri.Vid_GetModeInfo(&width, &height, mode))
-	{
-		ri.Con_Printf(PRINT_ALL, " invalid mode.\n");
-		return rserr_invalid_mode;
-	}
-
 	ri.Con_Printf(PRINT_ALL, " %d %d %s\n", width, height, win_fs[fullscreen]);
 
 	// destroy the existing window
@@ -265,7 +256,7 @@ rserr_t GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 			ri.Con_Printf(PRINT_ALL, "ok\n");
 
 			if (!VID_CreateWindow (width, height, true))
-				return rserr_invalid_mode;
+				return rserr_invalid_resolution;
 
 			return rserr_ok;
 		}
@@ -305,7 +296,7 @@ rserr_t GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 				gl_state.fullscreen = false;
 
 				if (!VID_CreateWindow(width, height, false))
-					return rserr_invalid_mode;
+					return rserr_invalid_resolution;
 
 				return rserr_invalid_fullscreen;
 			}
@@ -314,7 +305,7 @@ rserr_t GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 				ri.Con_Printf(PRINT_ALL, " ok\n");
 
 				if (!VID_CreateWindow(width, height, true))
-					return rserr_invalid_mode;
+					return rserr_invalid_resolution;
 
 				gl_state.fullscreen = true;
 
@@ -331,7 +322,7 @@ rserr_t GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 		gl_state.fullscreen = false;
 
 		if (!VID_CreateWindow(width, height, false))
-			return rserr_invalid_mode;
+			return rserr_invalid_resolution;
 	}
 
 	return rserr_ok;

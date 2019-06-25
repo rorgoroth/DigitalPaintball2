@@ -371,6 +371,8 @@ static void (APIENTRY * dllVertex4sv)(const GLshort *v);
 static void (APIENTRY * dllVertexPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 static void (APIENTRY * dllViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
 
+static void getResolutionStringFromGlMode(int mode, int vid_resx_value, int vid_resy_value, char* target);
+
 static void APIENTRY logAccum(GLenum op, GLfloat value)
 {
 	fprintf(glw_state.log_fp, "glAccum\n");
@@ -3581,7 +3583,6 @@ cvar_t	*gl_drawbuffer;
 cvar_t  *gl_driver;
 cvar_t	*gl_lightmap;
 cvar_t	*gl_shadows;
-cvar_t	*gl_mode;
 cvar_t	*gl_dynamic;
 cvar_t  *gl_monolightmap;
 cvar_t	*gl_anisotropy; // jitanisotropy
@@ -3621,6 +3622,7 @@ cvar_t	*gl_lockpvs;
 
 cvar_t	*gl_3dlabs_broken;
 
+cvar_t	*vid_resolution; // xrichardx: replacement of gl_mode
 cvar_t	*vid_fullscreen;
 cvar_t	*vid_gamma;
 cvar_t	*vid_lighten; // jitgamma
@@ -4955,6 +4957,12 @@ void R_RenderFrame (refdef_t *fd)
 
 void R_Register(void)
 {
+	// for creating the vid_resolution text (new) from gl_mode (old)
+	char buffer[32] = {0};
+	cvar_t* gl_mode;
+	cvar_t* vid_resx;
+	cvar_t* vid_resy;
+
 	cl_animdump = ri.Cvar_Get("cl_animdump", "0", 0); // frame dump - MrG
 	r_lefthand = ri.Cvar_Get("hand", "0", CVAR_USERINFO | CVAR_ARCHIVE);
 	r_norefresh = ri.Cvar_Get("r_norefresh", "0", 0);
@@ -5001,7 +5009,6 @@ void R_Register(void)
 	gl_log = ri.Cvar_Get("gl_log", "0", 0);
 #endif
 	gl_bitdepth = ri.Cvar_Get("gl_bitdepth", "0", 0);
-	gl_mode = ri.Cvar_Get("gl_mode", "4", CVAR_ARCHIVE); // default to 800x600 now instead of mode 3, 640x480
 	gl_lightmap = ri.Cvar_Get("gl_lightmap", "0", 0);
 	gl_shadows = ri.Cvar_Get("gl_shadows", "0", CVAR_ARCHIVE);
 	gl_dynamic = ri.Cvar_Get("gl_dynamic", "1", 0);
@@ -5036,6 +5043,19 @@ void R_Register(void)
 	gl_swapinterval = ri.Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
 	gl_saturatelighting = ri.Cvar_Get("gl_saturatelighting", "0", 0);
 	gl_3dlabs_broken = ri.Cvar_Get("gl_3dlabs_broken", "1", CVAR_ARCHIVE);
+
+	// migrate old way to set resolution (used to be gl_mode)
+	gl_mode = ri.Cvar_Get("gl_mode", "4", 0);
+	vid_resx = ri.Cvar_Get("vid_resx", "640", 0);
+	vid_resy = ri.Cvar_Get("vid_resy", "480", 0);
+
+	gl_mode->flags &= ~CVAR_ARCHIVE; // remove old gl_mode from config file.
+	vid_resx->flags &= ~CVAR_ARCHIVE; // remove old vid_resx from config file.
+	vid_resy->flags &= ~CVAR_ARCHIVE; // remove old vid_resy from config file.
+
+	getResolutionStringFromGlMode(gl_mode->value, vid_resx->value, vid_resy->value, buffer);
+	vid_resolution = ri.Cvar_Get("vid_resolution", buffer, CVAR_ARCHIVE);
+
 	vid_fullscreen = ri.Cvar_Get("vid_fullscreen", "0", CVAR_ARCHIVE);
 	vid_gamma = ri.Cvar_Get("vid_gamma", "1.0", CVAR_ARCHIVE);
 	vid_lighten = ri.Cvar_Get("vid_lighten", "0", CVAR_ARCHIVE); // jitgamma
@@ -5051,6 +5071,82 @@ void R_Register(void)
 	ri.Cmd_AddCommand("gl_strings", GL_Strings_f);
 }
 
+static void getResolutionStringFromGlMode(int mode, int vid_resx_value, int vid_resy_value, char* target) {
+	static const int glModes[][2] = {
+		{ 320, 240 },
+		{ 400, 300 },
+		{ 512, 384 },
+		{ 640, 480 },
+		{ 800, 600 },
+		{ 960, 720 },
+		{ 1024, 768 },
+		{ 1152, 864 },
+		{ 1280, 960 },
+		{ 1280, 1024 },
+		{ 1600, 1200 },
+		{ 2048, 1536 },
+		{ 720, 480 },
+		{ 720, 576 },
+		{ 848, 480 },
+		{ 960, 600 },
+		{ 1088, 612 },
+		{ 1280, 720 },
+		{ 1280, 768 },
+		{ 1280, 800 },
+		{ 1680, 1050 },
+		{ 1440, 900 },
+		{ 1920, 1200 },
+		{ 1920, 1080 },
+		{ 1920, 1440 },
+		{ 1366, 768 },
+		{ 1600, 900 },
+		{ 2560, 1440 },
+	};
+
+	int width = 640;
+	int height = 480;
+
+	if(mode >= 0 && mode < sizeof(glModes) / sizeof(glModes[0])) {
+		width = glModes[mode][0];
+		height = glModes[mode][1];
+	} else if (mode == -1) {
+		width = vid_resx_value;
+		height = vid_resy_value;
+	}
+
+	sprintf(target, "%dx%d", width, height);
+}
+
+void getWidthAndHeightFromString(int* width, int* height, char* string)
+{
+	char* ptr;
+
+	long parsedWidth;
+	long parsedHeight;
+
+	// used as fallback
+	*width = 640;
+	*height = 480;
+
+	// sets ptr to the end of the parsed number
+	parsedWidth = strtol(string, &ptr, 0);
+
+	while(*ptr != '\0' && !isdigit(*ptr))
+	{
+		++ptr;
+	}
+
+	parsedHeight = strtol(ptr, NULL, 0);
+
+	if(parsedWidth > 320 && parsedWidth < 32768) {
+		*width = parsedWidth;
+	}
+
+	if(parsedHeight > 240 && parsedHeight < 32768) {
+		*height = parsedHeight;
+	}
+}
+
 /*
 ==================
 R_SetMode
@@ -5060,6 +5156,7 @@ qboolean R_SetMode (void)
 {
 	rserr_t err;
 	qboolean fullscreen;
+	int width, height;
 
 	if (vid_fullscreen->modified && !gl_config.allow_cds)
 	{
@@ -5071,11 +5168,14 @@ qboolean R_SetMode (void)
 	fullscreen = vid_fullscreen->value;
 
 	vid_fullscreen->modified = false;
-	gl_mode->modified = false;
+	vid_resolution->modified = false;
 
-	if ((err = GLimp_SetMode(&vid.width, &vid.height, gl_mode->value, fullscreen)) == rserr_ok)
+	getWidthAndHeightFromString(&width, &height, vid_resolution->string);
+
+	if ((err = GLimp_SetMode(&vid.width, &vid.height, width, height, fullscreen)) == rserr_ok)
 	{
-		gl_state.prev_mode = gl_mode->value;
+		gl_state.prev_width = width;
+		gl_state.prev_height = height;
 	}
 	else
 	{
@@ -5085,18 +5185,21 @@ qboolean R_SetMode (void)
 			vid_fullscreen->modified = false;
 			ri.Con_Printf(PRINT_ALL, "ref_gl::R_SetMode() - Fullscreen unavailable in this mode.\n");
 
-			if ((err = GLimp_SetMode(&vid.width, &vid.height, gl_mode->value, false)) == rserr_ok)
+			if ((err = GLimp_SetMode(&vid.width, &vid.height, width, height, false)) == rserr_ok)
 				return true;
 		}
-		else if (err == rserr_invalid_mode)
+		else if (err == rserr_invalid_resolution)
 		{
-			ri.Cvar_SetValue("gl_mode", gl_state.prev_mode);
-			gl_mode->modified = false;
-			ri.Con_Printf(PRINT_ALL, "ref_gl::R_SetMode() - Invalid mode.\n");
+			char buffer[32];
+			sprintf(buffer, "%dx%d", gl_state.prev_width, gl_state.prev_height);
+			ri.Cvar_Set("vid_resolution", buffer);
+			vid_resolution->modified = false;
+
+			ri.Con_Printf(PRINT_ALL, "ref_gl::R_SetMode() - Invalid resolution.\n");
 		}
 
 		// try setting it back to something safe
-		if ((err = GLimp_SetMode(&vid.width, &vid.height, gl_state.prev_mode, false)) != rserr_ok)
+		if ((err = GLimp_SetMode(&vid.width, &vid.height, gl_state.prev_width, gl_state.prev_height, false)) != rserr_ok)
 		{
 			ri.Con_Printf(PRINT_ALL, "ref_gl::R_SetMode() - Could not revert to safe mode.\n");
 			return false;
@@ -5208,7 +5311,7 @@ qboolean R_Init (void *hinstance, void *hWnd)
 		{
 			ri.Cvar_Set("gl_driver", "3dfxgl");
 			ri.Cvar_Set("vid_fullscreen", "1");
-			ri.Cvar_Set("gl_mode", "3");
+			ri.Cvar_Set("vid_resolution", "640x480");
 			ri.Cvar_Set("vid_gamma_hw", "0");
 			ri.Cvar_Set("vid_gamma", "1");
 		}
@@ -5219,7 +5322,7 @@ qboolean R_Init (void *hinstance, void *hWnd)
 		{
 			ri.Cvar_Set("gl_driver", GL_DRIVER_LIB);
 			ri.Cvar_Set("vid_fullscreen", "0");
-			ri.Cvar_Set("gl_mode", "3");
+			ri.Cvar_Set("vid_resolution", "640x480");
 			ri.Cvar_Set("vid_gamma_hw", "0");
 			ri.Cvar_Set("vid_gamma", "1");
 		}
@@ -5236,8 +5339,9 @@ qboolean R_Init (void *hinstance, void *hWnd)
 		return -1;
 	}
 
-	// set our "safe" modes
-	gl_state.prev_mode = 3;
+	// set our "safe" resolution
+	gl_state.prev_width = 640;
+	gl_state.prev_height = 480;
 
 	// create the window and set up the context
 	if (!R_SetMode())
@@ -5764,7 +5868,7 @@ void R_BeginFrame (float camera_separation)
 	gl_state.camera_separation = camera_separation;
 
 	// change modes if necessary
-	if (gl_mode->modified || vid_fullscreen->modified || gl_lightmapgamma->modified) // jitgamma - restart on lightmap gamma change
+	if (vid_resolution->modified || vid_fullscreen->modified || gl_lightmapgamma->modified) // jitgamma - restart on lightmap gamma change
 	{	// FIXME: only restart if CDS is required
 		cvar_t	*ref;
 

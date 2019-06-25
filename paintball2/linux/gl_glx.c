@@ -751,7 +751,7 @@ static void InitSig(void)
 /*
 ** GLimp_SetMode
 */
-int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
+int GLimp_SetMode (int *pwidth, int *pheight, int width, int height, qboolean fullscreen)
 {
 	int width, height;
 	int attrib[] = {
@@ -794,12 +794,6 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 	else
 		ri.Con_Printf (PRINT_ALL, "...setting mode %d:", mode );
 
-	if ( !ri.Vid_GetModeInfo( &width, &height, mode ) )
-	{
-		ri.Con_Printf( PRINT_ALL, " invalid mode\n" );
-		return rserr_invalid_mode;
-	}
-
 	ri.Con_Printf( PRINT_ALL, " %d %d\n", width, height );
 
 	// destroy the existing window
@@ -807,7 +801,7 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 
 	if (!(dpy = XOpenDisplay(NULL))) {
 		fprintf(stderr, "Error couldn't open the X display\n");
-		return rserr_invalid_mode;
+		return rserr_invalid_resolution;
 	}
 
 	scrnum = DefaultScreen(dpy);
@@ -829,7 +823,7 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 		visinfo = qglXChooseVisual(dpy, scrnum, attrib_nostencil);
 		if (!visinfo) {
 			fprintf(stderr, "E: couldn't get an RGBA, DOUBLEBUFFER, DEPTH visual\n");
-			return rserr_invalid_mode;
+			return rserr_invalid_resolution;
 		}
 	}
 

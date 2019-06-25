@@ -320,7 +320,6 @@ typedef struct
 	cvar_t	*(*Cvar_Set) (const char *name, const char *value);
 	void	 (*Cvar_SetValue) (const char *name, float value);
 
-	qboolean	(*Vid_GetModeInfo) (int *width, int *height, int mode);
 	testexport_t *e;
 //jitmenu	void		(*Vid_MenuInit)( void );
 	void		(*Vid_NewWindow) (int width, int height);
