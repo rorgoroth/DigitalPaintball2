@@ -85,7 +85,7 @@ typedef enum
 	rserr_ok,
 
 	rserr_invalid_fullscreen,
-	rserr_invalid_mode,
+	rserr_invalid_resolution,
 
 	rserr_unknown
 } rserr_t;
@@ -181,7 +181,6 @@ extern cvar_t	*gl_particle_att_c;
 
 extern	cvar_t	*gl_nosubimage;
 extern	cvar_t	*gl_bitdepth;
-extern	cvar_t	*gl_mode;
 extern	cvar_t	*gl_log;
 extern	cvar_t	*gl_lightmap;
 extern	cvar_t	*gl_shadows;
@@ -216,6 +215,7 @@ extern	cvar_t	*gl_texturesolidmode;
 extern  cvar_t  *gl_saturatelighting;
 extern  cvar_t  *gl_lockpvs;
 
+extern	cvar_t	*vid_resolution;
 extern	cvar_t	*vid_fullscreen;
 extern	cvar_t	*vid_gamma;
 extern	cvar_t	*vid_lighten; // jitgamma
@@ -416,7 +416,8 @@ typedef struct
 {
 	qboolean fullscreen;
 
-	int     prev_mode;
+	int prev_width;
+	int prev_height;
 
 	unsigned char *d_16to8table;
 
@@ -496,9 +497,9 @@ IMPLEMENTATION SPECIFIC FUNCTIONS
 
 void		GLimp_BeginFrame (float camera_separation);
 void		GLimp_EndFrame (void);
-int 		GLimp_Init (void *hinstance, void *hWnd);
+int			GLimp_Init (void *hinstance, void *hWnd);
 void		GLimp_Shutdown (void);
-int     	GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen);
+rserr_t		GLimp_SetMode (int *pwidth, int *pheight, int width, int height, qboolean fullscreen);
 void		GLimp_AppActivate (qboolean active);
 void		GLimp_EnableLogging (qboolean enable);
 void		GLimp_LogNewFrame (void);

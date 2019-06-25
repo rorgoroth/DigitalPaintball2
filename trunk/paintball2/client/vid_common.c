@@ -26,9 +26,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "client.h"
 
-extern cvar_t *vid_resx; //xrichardx: custom resolutions with gl_mode -1
-extern cvar_t *vid_resy;
-
 /*
 ============
 VID_Restart_f
@@ -42,69 +39,6 @@ void VID_Restart_f (void)
 {
 	vid_ref->modified = true;
 }
-
-
-/*
-** VID_GetModeInfo
-*/
-
-vidmode_t vid_modes[] =
-{
-	{ "Mode 0: 320x240",    320, 240,   0 },
-	{ "Mode 1: 400x300",    400, 300,   1 },
-	{ "Mode 2: 512x384",    512, 384,   2 },
-	{ "Mode 3: 640x480",    640, 480,   3 },
-	{ "Mode 4: 800x600",    800, 600,   4 },
-	{ "Mode 5: 960x720",    960, 720,   5 },
-	{ "Mode 6: 1024x768",   1024, 768,  6 },
-	{ "Mode 7: 1152x864",   1152, 864,  7 },
-	{ "Mode 8: 1280x960",   1280, 960,  8 },
-	{ "Mode 9: 1280x1024",  1280, 1024, 9 }, // jit
-	{ "Mode 10: 1600x1200", 1600, 1200, 10 },
-	{ "Mode 11: 2048x1536", 2048, 1536, 11 },
-	 // jit
-	{ "blah", 720, 480,   12 },
-	{ "blah", 720, 576,   13 },
-	{ "blah", 848, 480,   14 },
-	{ "blah", 960, 600,   15 },
-	{ "blah", 1088, 612,  16 },
-	{ "blah", 1280, 720,  17 },
-	{ "blah", 1280, 768,  18 },
-	{ "blah", 1280, 800,  19 },
-	{ "blah", 1680, 1050, 20 },
-	{ "blah", 1440, 900,  21 },
-	{ "blah", 1920, 1200, 22 },
-	{ "blah", 1920, 1080, 23 }, // T3RR0R15T
-	{ "blah", 1920, 1440, 24 }, // T3RR0R15T
-	{ "blah", 1366, 768,  25 }, // T3RR0R15T
-	{ "blah", 1600, 900,  26 }, // T3RR0R15T
-	{ "blah", 2560, 1440, 27 }, // jit
-	// jitodo, custom resolution
-};
-
-#define VID_NUM_MODES (sizeof(vid_modes) / sizeof(vid_modes[0]))
-
-qboolean VID_GetModeInfo (int *width, int *height, int mode)
-{
-	//xrichardx: custom resolutions
-	if (mode == -1)
-	{
-		*width = (int)(vid_resx->value);
-		*height = (int)(vid_resy->value);
-		return true;
-	}
-
-	if (mode < 0 || mode >= VID_NUM_MODES)
-	{
-		return false;
-	}
-
-	*width  = vid_modes[mode].width;
-	*height = vid_modes[mode].height;
-
-	return true;
-}
-
 
 /*
 ** VID_NewWindow

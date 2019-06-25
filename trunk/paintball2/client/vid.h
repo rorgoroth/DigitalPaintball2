@@ -50,7 +50,6 @@ void VID_CheckChanges (void);
 void VID_Restart_f (void);
 void VID_MenuDraw (void);
 const char *VID_MenuKey (int);
-qboolean VID_GetModeInfo (int *width, int *height, int mode);
 void VID_NewWindow (int width, int height);
 void VID_Error (int err_level, char *fmt, ...);
 

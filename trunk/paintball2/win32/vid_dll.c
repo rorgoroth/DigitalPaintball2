@@ -50,8 +50,6 @@ cvar_t		*vid_xpos;			// X coordinate of window position
 cvar_t		*vid_ypos;			// Y coordinate of window position
 cvar_t		*vid_fullscreen;
 cvar_t		*vid_borderless;	// jitborderless
-cvar_t		*vid_resx;			// xrichardx: custom resulution with gl_mode -1
-cvar_t		*vid_resy;			// xrichardx: custom resulution with gl_mode -1
 
 // Global variables used internally by this module
 viddef_t	viddef;				// global video state; used by other modules
@@ -908,7 +906,6 @@ qboolean VID_LoadRefresh (char *name)
 	ri.Cvar_Get = Cvar_Get;
 	ri.Cvar_Set = Cvar_Set;
 	ri.Cvar_SetValue = Cvar_SetValue;
-	ri.Vid_GetModeInfo = VID_GetModeInfo;
 	ri.Vid_NewWindow = VID_NewWindow;
 	ri.Z_Free = Z_Free; // jitmalloc
 	ri.Z_Malloc = Z_Malloc; // jitmalloc
@@ -992,17 +989,6 @@ void CL_InitImages(); // jit, shush little warning
 void VID_CheckChanges (void)
 {
 	char name[100];
-
-	if (vid_resx->modified || vid_resy->modified)
-	{
-		cvar_t *gl_mode = Cvar_Get("gl_mode", "3", CVAR_ARCHIVE);
-		if (gl_mode->value == -1)
-		{
-			vid_ref->modified = true; // force vid_restart
-			vid_resx->modified = false;
-			vid_resy->modified = false;
-		}
-	}
 
 	if (win_noalttab->modified)
 	{
@@ -1126,8 +1112,6 @@ VID_Init
 void VID_Init (void)
 {
 	/* Create the video variables so we know how to start the graphics drivers */
-	vid_resx = Cvar_Get("vid_resx", "640", CVAR_ARCHIVE); //xrichardx: custom resolutions with gl_mode -1
-	vid_resy = Cvar_Get("vid_resy", "480", CVAR_ARCHIVE);
 	vid_ref = Cvar_Get("vid_ref", "pbgl", CVAR_ARCHIVE); // jit
 	vid_xpos = Cvar_Get("vid_xpos", "3", CVAR_ARCHIVE);
 	vid_ypos = Cvar_Get("vid_ypos", "22", CVAR_ARCHIVE);

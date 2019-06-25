@@ -579,21 +579,18 @@ void GLimp_EndFrame (void)
 /*
 ** GLimp_SetMode
 */
-int GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen )
+int GLimp_SetMode( int *pwidth, int *pheight, int width, int height, qboolean fullscreen )
 {
 	ri.Con_Printf (PRINT_ALL, "setting mode %d:", mode );
 
-	if ( !ri.Vid_GetModeInfo( pwidth, pheight, mode ) )
-	{
-		ri.Con_Printf( PRINT_ALL, " invalid mode\n" );
-		return rserr_invalid_mode;
-	}
+	*pwidth = width;
+	*pheight = height;
 
 	ri.Con_Printf( PRINT_ALL, " %d %d\n", *pwidth, *pheight);
 
 	if ( !GLimp_InitGraphics( fullscreen ) ) {
 		// failed to set a valid mode in windowed mode
-		return rserr_invalid_mode;
+		return rserr_invalid_resolution;
 	}
 
 	return rserr_ok;
