@@ -75,6 +75,8 @@ static void listview_sort(menu_widget_t *widget, int column, qboolean ascending)
 		list = widget->listview_list;
 	}
 
+	// TODO: This is currently O(n^2). If at any point we reach a significant number of servers again, we might need to change that, but since we need
+	// to keep list and map in the same order here, using qsort is not trivial.
 	for (i = start_index; i < end_index - 1; i++)
 	{
 		for (j = (i + 1); j < end_index; j++)
@@ -142,28 +144,99 @@ static void list_source (menu_widget_t *widget)
 	}
 }
 
+static char*** copy_listview_info(char*** source, int column_count, int row_count)
+{
+	int row, column;
+
+	char*** copy = Z_Malloc(sizeof(char**) * row_count);
+
+	for(row = 0; row < row_count; ++row) {
+		copy[row] = Z_Malloc(sizeof(char*) * column_count);
+
+		for(column = 0; column < column_count; ++column) {
+			copy[row][column] = CopyString(source[row][column]);
+		}
+	}
+
+	return copy;
+}
+
+static char** copy_listview_map(char** source, int row_count)
+{
+	int row;
+	char** copy = Z_Malloc(sizeof(char*) * row_count);
+
+	for(row = 0; row < row_count; ++row) {
+		copy[row] = CopyString(source[row]);
+	}
+
+	return copy;
+}
+
+void free_listview_info_entry(char** listview_info_entry, int column_count)
+{
+	int i;
+	for(i = 0; i < column_count; ++i)
+	{
+		Z_Free(listview_info_entry[i]);
+	}
+
+	Z_Free(listview_info_entry);
+}
+
+static void free_listview_info(char*** listview_info, int row_count, int column_count)
+{
+	int row;
+	for(row = 0; row < row_count; ++row) {
+		free_listview_info_entry(listview_info[row], column_count);
+	}
+	Z_Free(listview_info);
+}
+
+static void free_listview_map(char** listview_map, int row_count)
+{
+	int row;
+	for(row = 0; row < row_count; ++row) {
+		Z_Free(listview_map[row]);
+	}
+	Z_Free(listview_map);
+}
+
 static void listview_source (menu_widget_t *widget)
 {
 	extern char **cl_scores_nums; // jitodo - put these in a header or something
 	extern char ***cl_scores_listview_info;
 	extern int cl_scores_count;
+	extern int cl_scores_listview_column_count;
 	qboolean cl_scores_prep_listview_widget (void);
 
 	if (!widget || !widget->listview_source)
 		return;
 
+	if(widget->listview_source_list) {
+		free_listview_info(widget->listview_source_list, widget->listview_source_rowcount, widget->listview_source_column_count);
+		widget->listview_source_list = NULL;
+	}
+
+	if(widget->listview_source_map) {
+		free_listview_map(widget->listview_source_map, widget->listview_source_rowcount);
+		widget->listview_source_map = NULL;
+	}
+
 	if (Q_streq(widget->listview_source, "serverlist"))
 	{
-		widget->listview_source_list = m_serverlist.listview_info;
-		widget->listview_source_map = m_serverlist.ips;
+		widget->listview_source_list = copy_listview_info(m_serverlist.listview_info, m_serverlist.listview_info_column_count, m_serverlist.nummapped);
+		widget->listview_source_map = copy_listview_map(m_serverlist.ips, m_serverlist.nummapped);
 		widget->listview_source_rowcount = m_serverlist.nummapped;
+		widget->listview_source_column_count = m_serverlist.listview_info_column_count;
 	}
 	else if (Q_streq(widget->listsource, "scores"))
 	{
 		cl_scores_prep_listview_widget();
-		widget->listview_source_list = cl_scores_listview_info;
-		widget->listview_source_map = cl_scores_nums;
+		widget->listview_source_list = copy_listview_info(cl_scores_listview_info, cl_scores_listview_column_count, cl_scores_count);
+		widget->listview_source_map = copy_listview_map(cl_scores_nums, cl_scores_count);
 		widget->listview_source_rowcount = cl_scores_count;
+		widget->listview_source_column_count = cl_scores_listview_column_count;
 	}
 }
 
@@ -1262,6 +1335,12 @@ static void update_listview_subwidgets (menu_widget_t *widget)
 	if (widget->flags & WIDGET_FLAG_LISTSOURCE)
 	{
 		listview_source(widget);
+
+		if(widget->listview_sortedcolumn >= 0)
+		{
+			// The source probably does not provide the data sorted in the way we want it -> sort manually.
+			listview_sort(widget, widget->listview_sortedcolumn, widget->listview_sortorders[widget->listview_sortedcolumn] == LISTVIEW_ASCENDING);
+		}
 	}
 
 	// find which position should be selected:
@@ -1660,6 +1739,8 @@ static void update_listview_subwidgets (menu_widget_t *widget)
 // ++ ARTHUR [9/04/03]
 static void M_UpdateDrawingInformation (menu_widget_t *widget)
 {
+	menu_widget_t* under_cursor;
+
 	// only update if the widget or the hudscale has changed
 	if (!(widget->modified || cl_hudscale->modified || widget->dynamic))
 		return;
@@ -1671,6 +1752,13 @@ static void M_UpdateDrawingInformation (menu_widget_t *widget)
 
 	if (widget->listview_list)
 		update_listview_subwidgets(widget);
+
+	under_cursor = find_widget_under_cursor(widget);
+	if(under_cursor)
+	{
+		under_cursor->hover = true;
+		M_UpdateWidgetPosition(under_cursor);
+	}
 
 	widget->modified = false;
 }
