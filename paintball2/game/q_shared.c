@@ -2510,10 +2510,10 @@ void strip_garbage (char *cout, const char *cin, size_t size_out) // jit b43
 			assert(index >= 0 && index < 256);
 			*sbuf = char_remap[index];
 			++sbuf;
-			assert(sbuf < sbuf_max);
 
 			if (sbuf >= sbuf_max)
 			{
+				assert(s[1] == NULL); // ok if sbuf == sbuf_max as long as s + 1 is null, otherwise we're truncating strings.
 				*sbuf = 0;
 				return;
 			}
