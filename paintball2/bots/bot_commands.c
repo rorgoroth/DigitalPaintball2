@@ -80,6 +80,7 @@ static edict_t *GetBotEntByName (const char *name_to_find)
 	return NULL;
 }
 
+
 static void RemoveBotCommand (const char *nameToRemove, edict_t *ent_cmd)
 {
 	edict_t *ent;
@@ -117,28 +118,33 @@ void BotHere (edict_t *ent)
 }
 
 
-void BotCmd (edict_t *ent_cmd, const char *name_to_command, const char *cmd1, const char *cmd2)
+/*void BotCmd (edict_t *ent_cmd, const char *name_to_command, const char *cmd1, const char *cmd2)
 {
-	edict_t *ent;
+	edict_t *bot_ent;
 
 	if (Q_strcaseeq(name_to_command, "all"))
 	{
-		bi.cprintf(ent_cmd, PRINT_POPUP, "Command not implemented yet.\n");
-		// todo - loop through all bots and execute command
+		int bot_index;
+
+		for (bot_index = 0; bot_index < bots.count; ++bot_index)
+		{
+			bot_ent = bots.ents[bot_index];
+			BotCmdExec(bot_ent, cmd1, cmd2);
+		}
+
 		return;
 	}
 
-	ent = GetBotEntByName(name_to_command);
+	bot_ent = GetBotEntByName(name_to_command);
 
-	if (ent)
+	if (bot_ent)
 	{
-		bi.cprintf(ent_cmd, PRINT_POPUP, "Command not implemented yet.\n");
-		// todo
+		BotCmdExec(bot_ent, cmd1, cmd2);
 		return;
 	}
 
 	bi.cprintf(ent_cmd, PRINT_POPUP, "No bots found with a name containing \"%s\".\n", name_to_command);
-}
+}*/
 
 
 qboolean BotCommand (edict_t *ent, const char *cmd, const char *cmd2, const char *cmd3, const char *cmd4)
@@ -174,12 +180,12 @@ qboolean BotCommand (edict_t *ent, const char *cmd, const char *cmd2, const char
 		{
 			AStarDebugEndPoint(ent->s.origin);
 			return true;
-		}
-		else if (Q_strcaseeq(cmd, "botcmd"))
+		}/*
+		else if (Q_strcaseeq(cmd, "botcmd") || Q_strcaseeq(cmd, "botcommand"))
 		{
 			BotCmd(ent, cmd2, cmd3, cmd4);
 			return true;
-		}
+		}*/
 	}
 
 	return false;
