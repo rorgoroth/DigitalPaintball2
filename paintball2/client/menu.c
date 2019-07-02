@@ -998,7 +998,9 @@ static void M_UpdateWidgetPosition (menu_widget_t *widget)
 			}
 
 			widget->widgetSize.x = widget->listview_totalwidth * TEXT_WIDTH
-				+ widget->listview_column_separator_padding * (widget->listview_columncount) * scale;
+				+ widget->listview_column_separator_padding * (widget->listview_columncount) * scale
+				+ SELECT_HSPACING * widget->listview_columncount
+				+ SCROLL_ARROW_WIDTH_UNSCALED * scale; // TODO: Should only take this into account when there is a scroll bar present (or always show the scroll bar?)
 
 			widget->widgetSize.y = widget->listview_rowcount * 
 				(TEXT_HEIGHT+LISTVIEW_VSPACING) + LISTVIEW_VSPACING;
