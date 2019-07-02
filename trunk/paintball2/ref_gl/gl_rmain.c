@@ -371,7 +371,7 @@ static void (APIENTRY * dllVertex4sv)(const GLshort *v);
 static void (APIENTRY * dllVertexPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 static void (APIENTRY * dllViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
 
-static void getResolutionStringFromGlMode(int mode, int vid_resx_value, int vid_resy_value, char* target);
+static void getResolutionStringFromGlMode(int mode, int vid_resx_value, int vid_resy_value, char* target, size_t target_size);
 
 static void APIENTRY logAccum(GLenum op, GLfloat value)
 {
@@ -5053,7 +5053,7 @@ void R_Register(void)
 	vid_resx->flags &= ~CVAR_ARCHIVE; // remove old vid_resx from config file.
 	vid_resy->flags &= ~CVAR_ARCHIVE; // remove old vid_resy from config file.
 
-	getResolutionStringFromGlMode(gl_mode->value, vid_resx->value, vid_resy->value, buffer);
+	getResolutionStringFromGlMode(gl_mode->value, vid_resx->value, vid_resy->value, buffer, sizeof(buffer));
 	vid_resolution = ri.Cvar_Get("vid_resolution", buffer, CVAR_ARCHIVE);
 
 	vid_fullscreen = ri.Cvar_Get("vid_fullscreen", "0", CVAR_ARCHIVE);
@@ -5071,7 +5071,7 @@ void R_Register(void)
 	ri.Cmd_AddCommand("gl_strings", GL_Strings_f);
 }
 
-static void getResolutionStringFromGlMode(int mode, int vid_resx_value, int vid_resy_value, char* target) {
+static void getResolutionStringFromGlMode(int mode, int vid_resx_value, int vid_resy_value, char* target, size_t target_size) {
 	static const int glModes[][2] = {
 		{ 320, 240 },
 		{ 400, 300 },
@@ -5114,7 +5114,7 @@ static void getResolutionStringFromGlMode(int mode, int vid_resx_value, int vid_
 		height = vid_resy_value;
 	}
 
-	sprintf(target, "%dx%d", width, height);
+	Com_sprintf(target, target_size, "%dx%d", width, height);
 }
 
 void getWidthAndHeightFromString(int* width, int* height, char* string)
