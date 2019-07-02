@@ -600,6 +600,7 @@ void S_SpatializeOrigin (vec3_t origin, float master_vol, float dist_mult, int *
     vec_t		dist;
     vec_t		lscale, rscale, scale, scale2;
     vec3_t		source_vec;
+	vec_t		scale_divisor;
 
 	if (cls.state != ca_active)
 	{
@@ -629,11 +630,14 @@ void S_SpatializeOrigin (vec3_t origin, float master_vol, float dist_mult, int *
 		rscale = 0.5f * (1.0f + dot);
 		lscale = 0.5f * (1.0f - dot);
 	}
-
+	
 	// add in distance effect
+	// Previous curve: scale_divisor = (1.0f + dist * 16.0f); // jitsound
+	scale_divisor = (1.0 + dist * 6.0) * (1.0 + dist * 6.0); // jitsound
+
 	//scale = (1.0 - dist) * rscale;
 	//scale = rscale / (1.0f + dist); // jitsound
-	scale = rscale / (1.0f + dist * 16.0f); // jitsound
+	scale = rscale / scale_divisor; // jitsound
 	scale2 = (1.0f - dist) * rscale;
 
 	if (scale2 < scale) // jitsound
@@ -646,7 +650,7 @@ void S_SpatializeOrigin (vec3_t origin, float master_vol, float dist_mult, int *
 
 	//scale = (1.0 - dist) * lscale;
 	//scale = lscale / (1.0f + dist); // jitsound
-	scale = lscale / (1.0f + dist * 20.0f); // jitsound
+	scale = lscale / scale_divisor; // jitsound
 	scale2 = (1.0f - dist) * lscale;
 
 	if (scale2 < scale)
