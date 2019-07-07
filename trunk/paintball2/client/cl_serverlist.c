@@ -368,7 +368,7 @@ static char **create_listview_info(m_serverlist_server_t *server)
 		else
 			pingcolor = pingcolormin - (pingcolormin - pingcolormax) * (ping - pingmin) / (pingmax - pingmin);
 
-		Com_sprintf(buffer, sizeof(buffer), "%c%c%-3d%c ", SCHAR_COLOR, pingcolor, ping, SCHAR_ENDFORMAT);
+		Com_sprintf(buffer, sizeof(buffer), "%c%c%-3d", SCHAR_COLOR, pingcolor, ping);
 	}
 	info[1] = CopyString(buffer);
 
