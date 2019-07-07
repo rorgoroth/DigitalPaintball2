@@ -315,6 +315,93 @@ int strlen_noformat (const char *s)
 	return count;
 }
 
+
+// Returns the actual character pos for a given visible position,
+// EX: ("##abc", 1) would return 3 if # was a formatting character.
+// If the input pos is > than the length of the string, will return the length of the string.
+int str_actual_format_pos (const char *s, int visible_pos)
+{
+	int count = 0;
+	const char *s_start = s;
+
+	if (!s)
+		return 0;
+
+	while (*s && count < visible_pos)
+	{
+		if (*s != SCHAR_UNDERLINE && *s != SCHAR_ITALICS && *s != SCHAR_ENDFORMAT)
+		{
+			if (*s == SCHAR_COLOR && *(s + 1))
+				++s; // skip two characters.
+			else
+				++count;
+		}
+
+		++s;
+	}
+
+	return s - s_start;
+}
+
+
+// Returns the position visible to the user.
+// EX ("##abc", 3) would return 1 if # was a formatting character.
+// If the input pos is > than the length of the string, will return the length of the string.
+int str_visible_pos (const char *s, int actual_pos)
+{
+	int visible_pos = 0;
+	const char *s_start = s;
+
+	if (!s)
+		return 0;
+
+	while (*s && s - s_start < actual_pos)
+	{
+		if (*s != SCHAR_UNDERLINE && *s != SCHAR_ITALICS && *s != SCHAR_ENDFORMAT)
+		{
+			if (*s == SCHAR_COLOR && *(s + 1))
+				++s; // skip two characters.
+			else
+				++visible_pos;
+		}
+
+		++s;
+	}
+
+	return visible_pos;
+}
+
+
+// Returns the position in the string, counting back from a given position ignoring formatting characters
+// Returns 0 if the number of characters back is more than the visible length of the string.
+int str_visible_pos_back (const char *s, int from_pos, int num_visible_chars_back)
+{
+	register int num_visible_chars = 0;
+	const char *s_start = s;
+	s += from_pos;
+
+	while (s > s_start && num_visible_chars < num_visible_chars_back)
+	{
+		switch (*s)
+		{
+		case SCHAR_COLOR:
+		case SCHAR_UNDERLINE:
+		case SCHAR_ENDFORMAT:
+		case SCHAR_ITALICS:
+			break;
+		default:
+			// Current character might be a color, so don't count it if the previous character is a color code.
+			if (s > s_start && *(s - 1) != SCHAR_COLOR)
+			{
+				++num_visible_chars;
+			}
+		}
+		--s;
+	}
+
+	return s - s_start;
+}
+
 static void M_FindKeysForCommand (char *command, int *twokeys)
 {
 	int		count;
@@ -1262,7 +1349,7 @@ static void update_select_subwidgets (menu_widget_t *widget)
 		// truncate the text if too wide to fit:
 		if (strlen_noformat(widget->select_list[i] + widget->select_hstart) > width)
 		{
-			nullpos = widget->select_list[i] + widget->select_hstart + width;
+			nullpos = widget->select_list[i] + str_actual_format_pos(widget->select_list[i], widget->select_hstart + width);
 			temp = *nullpos;
 			*nullpos = '\0';
 
@@ -1511,7 +1598,7 @@ static void update_listview_subwidgets (menu_widget_t *widget)
 
 		if (strlen_noformat(widget->listview_list[1][i]) > width)
 		{
-			nullpos = widget->listview_list[1][i] + width;
+			nullpos = widget->listview_list[1][i] + str_actual_format_pos(widget->listview_list[1][i], width);
 			temp = *nullpos;
 			*nullpos = '\0';
 
@@ -1578,7 +1665,8 @@ static void update_listview_subwidgets (menu_widget_t *widget)
 
 				if (strlen_noformat(widget_text) > width)
 				{
-					nullpos = widget_text + width;
+					int truncate_pos = str_actual_format_pos(widget_text, width);
+					nullpos = widget_text + truncate_pos;
 					temp = *nullpos;
 					*nullpos = '\0';
 
@@ -1648,7 +1736,8 @@ static void update_listview_subwidgets (menu_widget_t *widget)
 
 				if (strlen_noformat(widget_text) > width)
 				{
-					nullpos = widget_text + width;
+					int truncate_pos = str_actual_format_pos(widget_text, width);
+					nullpos = widget_text + truncate_pos;
 					temp = *nullpos;
 					*nullpos = '\0';
 
@@ -2026,13 +2115,14 @@ static void M_HilightPreviousWidget (menu_screen_t *menu)
 
 static void field_adjustCursor (menu_widget_t *widget)
 {
-	int pos, string_len = 0;
-	
-	pos = widget->field_cursorpos;
+	int pos = widget->field_cursorpos;
+	int string_len = 0;
+	const char *str = "";
 
-	// jitodo -- compensate for color formatting
 	if (widget->cvar)
-		string_len = strlen(Cvar_Get(widget->cvar, widget->cvar_default, CVAR_ARCHIVE)->string);
+		str = Cvar_Get(widget->cvar, widget->cvar_default, CVAR_ARCHIVE)->string;
+
+	string_len = strlen(str);
 
 	if (pos < 0)
 		pos = 0;
@@ -2043,8 +2133,17 @@ static void field_adjustCursor (menu_widget_t *widget)
 	if (pos > string_len)
 		pos = string_len;
 
-	if (pos >= widget->field_width + widget->field_start)
-		widget->field_start = pos - widget->field_width + 1;
+	if (widget->field_start > string_len) // shouldn't happen, but just in case something wierd goes on and the string is shortened?
+	{
+		assert(0);
+		widget->field_start = string_len;
+	}
+
+	if (str_visible_pos(str + widget->field_start, pos) >= widget->field_width)
+	{
+		//widget->field_start = pos - widget->field_width + 1;
+		widget->field_start = str_visible_pos_back(str, pos, widget->field_width - 1);
+	}
 
 	widget->field_cursorpos = pos;
 }
@@ -4020,6 +4119,7 @@ static void M_DrawField (menu_widget_t *widget)
 	char temp;
 	int nullpos;
 	char pass_str[64] = "***************************************************************";
+	int start_pos = 0;
 
 	if (widget->cvar)
 		cvar_string = Cvar_Get(widget->cvar, widget->cvar_default, CVAR_ARCHIVE)->string;
@@ -4061,30 +4161,31 @@ static void M_DrawField (menu_widget_t *widget)
 	else
 	{
 		re.DrawStretchPic2(x, y, FIELD_LWIDTH, FIELD_HEIGHT, i_field1l);
-		re.DrawStretchPic2(x+FIELD_LWIDTH, y, TEXT_WIDTH*width, FIELD_HEIGHT, i_field1m);
-		re.DrawStretchPic2(x+FIELD_LWIDTH+TEXT_WIDTH*width, y, FIELD_LWIDTH, FIELD_HEIGHT, i_field1r);
+		re.DrawStretchPic2(x + FIELD_LWIDTH, y, TEXT_WIDTH * width, FIELD_HEIGHT, i_field1m);
+		re.DrawStretchPic2(x + FIELD_LWIDTH + TEXT_WIDTH * width, y, FIELD_LWIDTH, FIELD_HEIGHT, i_field1r);
 	}
 
 	// draw only the portion of the string that fits within the field:
-	if (strlen_noformat(cvar_string) > widget->field_start + widget->field_width)
+	//if (strlen_noformat(cvar_string) > widget->field_start + widget->field_width)
 	{
-		nullpos = widget->field_start + widget->field_width;
+		start_pos = str_actual_format_pos(cvar_string, widget->field_start);
+		nullpos = str_actual_format_pos(cvar_string + start_pos, widget->field_width) + start_pos;
 		temp = cvar_string[nullpos];
 		cvar_string[nullpos] = 0;
-		re.DrawString(x+(FIELD_LWIDTH-TEXT_WIDTH), y+(FIELD_HEIGHT-TEXT_HEIGHT)/2,
-			cvar_string+widget->field_start);
+		re.DrawString(x + (FIELD_LWIDTH-TEXT_WIDTH), y + (FIELD_HEIGHT - TEXT_HEIGHT) / 2,
+			cvar_string + start_pos);
 		cvar_string[nullpos] = temp;
 	}
-	else
+	/*else
 	{
 		re.DrawString(x+(FIELD_LWIDTH-TEXT_WIDTH), y+(FIELD_HEIGHT-TEXT_HEIGHT)/2,
 			cvar_string+widget->field_start);
-	}
+	}*/
 
 	if (widget->selected || widget->hover)
 	{
-		Con_DrawCursor(x + (FIELD_LWIDTH-TEXT_WIDTH) +
-			(widget->field_cursorpos - widget->field_start)*TEXT_WIDTH, y+(FIELD_HEIGHT-TEXT_HEIGHT)/2);
+		Con_DrawCursor(x + (FIELD_LWIDTH - TEXT_WIDTH) +
+			str_visible_pos(cvar_string, (widget->field_cursorpos - start_pos)) * TEXT_WIDTH, y + (FIELD_HEIGHT - TEXT_HEIGHT) / 2);
 	}
 }
 
