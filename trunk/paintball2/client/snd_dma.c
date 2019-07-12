@@ -199,30 +199,34 @@ void S_Init (void)
 		    snprintf(fn, MAX_OSPATH, "./snd_%s.so", snddriver->string);
 #endif
 		    
-		    if (stat(fn, &st) == -1) {
-			Com_Printf("\nload %s failed: %s\n", fn, strerror(errno));
-			return;
+		    if (stat(fn, &st) == -1)
+			{
+				Com_Printf("\nload %s failed: %s\n", fn, strerror(errno));
+				return;
 		    }
-		    if ((snddriver_library = dlopen(fn, RTLD_LAZY)) == 0) {
-			Com_Printf("\nSound failed: %s not found\n", fn, dlerror());
-			return;
+
+		    if ((snddriver_library = dlopen(fn, RTLD_LAZY)) == 0)
+			{
+				Com_Printf("\nSound failed: %s: %s\n", fn, dlerror());
+				return;
 		    }
+
 		    Com_Printf("LoadLibrary(\"%s\")\n", fn);
 		    
-		    if ((SNDDMA_Init = dlsym(snddriver_library, "SNDDMA_Init")) == 0)
-			Com_Error(ERR_FATAL, "dlsym failed loading SNDDMA_Init\n");
+			if ((SNDDMA_Init = dlsym(snddriver_library, "SNDDMA_Init")) == 0)
+				Com_Error(ERR_FATAL, "dlsym failed loading SNDDMA_Init\n");
 
-		    if ((SNDDMA_Shutdown = dlsym(snddriver_library, "SNDDMA_Shutdown")) == 0)
-			Com_Error(ERR_FATAL, "dlsym failed loading SNDDMA_Shutdown\n");
+			if ((SNDDMA_Shutdown = dlsym(snddriver_library, "SNDDMA_Shutdown")) == 0)
+				Com_Error(ERR_FATAL, "dlsym failed loading SNDDMA_Shutdown\n");
 
-		    if ((SNDDMA_GetDMAPos = dlsym(snddriver_library, "SNDDMA_GetDMAPos")) == 0)
-			Com_Error(ERR_FATAL, "dlsym failed loading SNDDMA_GetDMAPos\n");
+			if ((SNDDMA_GetDMAPos = dlsym(snddriver_library, "SNDDMA_GetDMAPos")) == 0)
+				Com_Error(ERR_FATAL, "dlsym failed loading SNDDMA_GetDMAPos\n");
 
-		    if ((SNDDMA_BeginPainting = dlsym(snddriver_library, "SNDDMA_BeginPainting")) == 0)
-			Com_Error(ERR_FATAL, "dlsym failed loading SNDDMA_BeginPainting\n");
+			if ((SNDDMA_BeginPainting = dlsym(snddriver_library, "SNDDMA_BeginPainting")) == 0)
+				Com_Error(ERR_FATAL, "dlsym failed loading SNDDMA_BeginPainting\n");
 
-		    if ((SNDDMA_Submit = dlsym(snddriver_library, "SNDDMA_Submit")) == 0)
-			Com_Error(ERR_FATAL, "dlsym failed loading SNDDMA_Submit\n");
+			if ((SNDDMA_Submit = dlsym(snddriver_library, "SNDDMA_Submit")) == 0)
+				Com_Error(ERR_FATAL, "dlsym failed loading SNDDMA_Submit\n");
 
 		    snddriver_active = true;
 		}
