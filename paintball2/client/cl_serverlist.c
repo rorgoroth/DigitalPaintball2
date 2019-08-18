@@ -21,6 +21,8 @@ char g_szRandomServerlistString[32];
 // Project-wide Globals
 m_serverlist_t m_serverlist;
 
+void free_listview_info_entry(char**, int);
+
 static void ping_broadcast (void)
 {
 	netadr_t	adr;
@@ -429,7 +431,6 @@ static void NetAdrToString (netadr_t adr, char *strout, int sizeout)
 
 void M_AddToServerList (netadr_t adr, char *info, qboolean pinging)
 {
-	void free_listview_info_entry(char**, int);
 	int i;
 	char addrip[32];
 	int ping;

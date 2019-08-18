@@ -202,7 +202,6 @@ qboolean VID_LoadRefresh(char *name)
 	ri.Cvar_Get = Cvar_Get;
 	ri.Cvar_Set = Cvar_Set;
 	ri.Cvar_SetValue = Cvar_SetValue;
-	ri.Vid_GetModeInfo = VID_GetModeInfo;
 	ri.Vid_NewWindow = VID_NewWindow;
 	ri.Z_Free = Z_Free; // jitmalloc
 	ri.Z_Malloc = Z_Malloc; // jitmalloc

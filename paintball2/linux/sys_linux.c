@@ -64,7 +64,7 @@ void Sys_ConsoleOutput (char *string)
 	{
 		char text[1024];
 
-		strip_garbage(text, string); // jit - remove extended codes
+		strip_garbage(text, string, sizeof(text)); // jit - remove extended codes
 		fputs(text, stdout);
 	}
 	else
@@ -87,7 +87,7 @@ void Sys_Printf (char *fmt, ...)
 	if (nostdout && nostdout->value)
 		return;
 
-	strip_garbage(text_clean, text); // jit
+	strip_garbage(text_clean, text, sizeof(text_clean)); // jit
 	fputs(text_clean, stdout);
 /*
 	for (p = (unsigned char *)text; *p; p++)
