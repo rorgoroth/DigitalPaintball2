@@ -4168,6 +4168,7 @@ static void M_DrawField (menu_widget_t *widget)
 	// draw only the portion of the string that fits within the field:
 	//if (strlen_noformat(cvar_string) > widget->field_start + widget->field_width)
 	{
+		// TODO: Add color code back in if it was truncated.
 		start_pos = str_actual_format_pos(cvar_string, widget->field_start);
 		nullpos = str_actual_format_pos(cvar_string + start_pos, widget->field_width) + start_pos;
 		temp = cvar_string[nullpos];

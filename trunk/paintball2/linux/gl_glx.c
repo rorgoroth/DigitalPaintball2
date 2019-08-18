@@ -751,9 +751,8 @@ static void InitSig(void)
 /*
 ** GLimp_SetMode
 */
-int GLimp_SetMode (int *pwidth, int *pheight, int width, int height, qboolean fullscreen)
+rserr_t GLimp_SetMode (int *pwidth, int *pheight, int width, int height, qboolean fullscreen)
 {
-	int width, height;
 	int attrib[] = {
 		GLX_RGBA,
 		GLX_DOUBLEBUFFER,
@@ -790,11 +789,9 @@ int GLimp_SetMode (int *pwidth, int *pheight, int width, int height, qboolean fu
 	ri.Con_Printf( PRINT_ALL, "Initializing OpenGL display\n");
 
 	if (fullscreen)
-		ri.Con_Printf (PRINT_ALL, "...setting fullscreen mode %d:", mode );
+		ri.Con_Printf(PRINT_ALL, "...setting fullscreen resolution %dx%d", width, height);
 	else
-		ri.Con_Printf (PRINT_ALL, "...setting mode %d:", mode );
-
-	ri.Con_Printf( PRINT_ALL, " %d %d\n", width, height );
+		ri.Con_Printf(PRINT_ALL, "...setting resolution %dx%d", width, height);
 
 	// destroy the existing window
 	GLimp_Shutdown ();
