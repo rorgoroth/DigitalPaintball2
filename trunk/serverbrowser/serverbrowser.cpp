@@ -211,11 +211,14 @@ static void LoadListHttp (const char *sHttpSource)
 	struct hostent *pHostent;
 	char *s;
 	char szBuffer[1024];
+	const char *pszLocation;
 	int nLen, nSent, nRead;
 	FILE *fpTemp;
 
 	strncpyz(szHostname, sHttpSource + sizeof("http://") - 1, sizeof(szHostname));
 	s = strchr(szHostname, '/');
+
+	pszLocation = strchr(sHttpSource + sizeof("http://") - 1, '/'); // "http://dplogin.com/serverlist.php" -> "/serverlist.php"
 
 	if (s)
 		*s = 0;
@@ -251,7 +254,7 @@ static void LoadListHttp (const char *sHttpSource)
 		return;
 	}
 
-	nLen = _snprintf(szBuffer, sizeof(szBuffer), "GET %s HTTP/1.0\n\n", sHttpSource);
+	nLen = _snprintf(szBuffer, sizeof(szBuffer), "GET %s HTTP/1.0\r\n\r\n", pszLocation);
 	szBuffer[sizeof(szBuffer)-1] = 0;
 	nSent = send(nSocket, szBuffer, nLen, 0);
 
