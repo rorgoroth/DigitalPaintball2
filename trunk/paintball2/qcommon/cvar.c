@@ -223,6 +223,7 @@ cvar_t *Cvar_FullSet (const char *var_name, const char *value, int flags, qboole
 					return var;
 
 				Z_Free(var->latched_string);
+				var->latched_string = NULL; // jit - crash fix when switching game cvar under certain cases.
 			}
 			else
 			{
