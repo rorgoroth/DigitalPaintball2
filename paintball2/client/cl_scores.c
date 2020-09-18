@@ -315,10 +315,10 @@ static void SortScores (void)
 			score = ((score)*1000) + cl_scores[i].kills;
 			break;
 		case 2:															// default since build 41
-			score = (score * 10000) + cl_scores[i].caps * 8 + cl_scores[i].grabs * 4 + cl_scores[i].kills;
+			score = (score * 10000) + cl_scores[i].caps * 8 + cl_scores[i].grabs * 2 + cl_scores[i].kills; // Reduced grabs from 4 points to 2 points after some discussion with the community.
 			break;
 		case 3:															// T3RR0R15T's favorite :) ---> need some tests
-			score = (score * 10000) + cl_scores[i].caps * 8 + cl_scores[i].grabs * 4 + cl_scores[i].kills - cl_scores[i].deaths / 2 + (600 - (cl.frame.servertime/1000 - cl_scores[i].starttime)/60);
+			score = (score * 10000) + cl_scores[i].caps * 8 + cl_scores[i].grabs * 2 + cl_scores[i].kills - cl_scores[i].deaths / 2 + (600 - (cl.frame.servertime/1000 - cl_scores[i].starttime)/60);
 			break;
 		default:
 			score = (score * 10000) + cl_scores[i].caps * 8 + cl_scores[i].grabs * 4 + cl_scores[i].kills;
