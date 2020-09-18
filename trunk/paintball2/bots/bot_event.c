@@ -47,12 +47,82 @@ static void BotHandleDisconnect (const edict_t *ent)
 }
 
 
+void BotHandleFlagGrab (edict_t *flag, edict_t *player_ent)
+{
+	int bot_index;
+
+	for (bot_index = 0; bot_index < bots.count; ++bot_index)
+	{
+		if (bots.ents[bot_index] == player_ent)
+		{
+			bots.goals[bot_index].has_flag = true;
+			BotGoalWander(bot_index, (int)(nu_rand(4.0) * 1000.0)); // wander for a few seconds so the returning path isn't super predictable (also clear out current goal).
+		}
+	}
+}
+
+
+void BotHandleRoundStart (void)
+{
+	int bot_index;
+
+	// Bots don't have a flag when the round starts.
+	for (bot_index = 0; bot_index < bots.count; ++bot_index)
+	{
+		bots.goals[bot_index].has_flag = false;
+	}
+}
+
+
+void BotHandleRespawn (edict_t *ent)
+{
+	int bot_index;
+
+	for (bot_index = 0; bot_index < bots.count; ++bot_index)
+	{
+		if (bots.ents[bot_index] == ent)
+		{
+			bots.goals[bot_index].has_flag = false; // Double make sure the bot doesn't think it has a flag, since it just respawned.
+		}
+	}
+}
+
+
+void BotHandleCap (edict_t *ent, edict_t *flag)
+{
+	int bot_index;
+
+	for (bot_index = 0; bot_index < bots.count; ++bot_index)
+	{
+		if (bots.ents[bot_index] == ent)
+		{
+			bots.goals[bot_index].has_flag = false;
+		}
+	}
+}
+
+
 void BotHandleGameEvent (game_event_t event, edict_t *ent, void *data1, void *data2)
 {
 	switch (event)
 	{
 	case EVENT_DISCONNECT:
 		BotHandleDisconnect(ent);
+		break;
+	case EVENT_GRAB:
+		BotHandleFlagGrab(ent, (edict_t *)data1);
+		break;
+	case EVENT_ROUNDSTART:
+		BotHandleRoundStart();
+		break;
+	case EVENT_RESPAWN:
+		BotHandleRespawn(ent);
+		break;
+	case EVENT_CAP:
+		BotHandleCap(ent, (edict_t *)data1);
+		break;
+	case EVENT_DROPFLAG:
+		//BotHandleFlagDrop(ent); // Ent is the carrier.  We don't know the flag...
 		break;
 	}
 	// Events like round starts, flag grabs, eliminations, etc. will be passed in here
