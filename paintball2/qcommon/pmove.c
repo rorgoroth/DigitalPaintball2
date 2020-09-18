@@ -20,6 +20,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "qcommon.h"
 
+#ifndef DEDICATED_ONLY
+extern cvar_t *cl_displayjumptime;
+extern	unsigned	sys_frame_time;
+#endif
+
 #define	STEPSIZE	18.0f
 
 // all of the locals will be zeroed before each
@@ -979,6 +984,15 @@ void PM_CheckJump (void)
 
 	if (pml.velocity[2] < jumpvelocity)
 		pml.velocity[2] = jumpvelocity;
+
+#ifndef DEDICATED_ONLY
+	if (cl_displayjumptime && cl_displayjumptime->value) {
+		static unsigned int last_time = 0;
+		unsigned int current_time = sys_frame_time;
+		Com_Printf("Time between jumps: %d ms\n", current_time - last_time);
+		last_time = sys_frame_time;
+	}
+#endif
 }
 
 
