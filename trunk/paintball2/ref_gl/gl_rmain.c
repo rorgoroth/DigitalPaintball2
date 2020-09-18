@@ -5138,11 +5138,13 @@ void getWidthAndHeightFromString(int* width, int* height, char* string)
 
 	parsedHeight = strtol(ptr, NULL, 0);
 
-	if(parsedWidth > 320 && parsedWidth < 32768) {
+	if (parsedWidth >= 320 && parsedWidth <= 32768)
+	{
 		*width = parsedWidth;
 	}
 
-	if(parsedHeight > 240 && parsedHeight < 32768) {
+	if (parsedHeight >= 240 && parsedHeight <= 32768)
+	{
 		*height = parsedHeight;
 	}
 }
