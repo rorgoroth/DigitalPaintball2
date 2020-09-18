@@ -95,9 +95,9 @@ SNDDMA_Init (struct sndinfo * s)
 	desired.channels = si->sndchannels->value;
 	
 	if (desired.freq == 48000)
-		desired.samples = 4096;
+		desired.samples = 1024;
 	else if (desired.freq == 44100)
-		desired.samples = 2048;
+		desired.samples = 1024;
 	else if (desired.freq == 22050)
 		desired.samples = 1024;
 	else
