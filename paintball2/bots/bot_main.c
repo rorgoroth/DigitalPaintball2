@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014 Nathan "jitspoe" Wulf, Digital Paint
+Copyright (c) 2014-2020 Nathan "jitspoe" Wulf, Digital Paint
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -39,12 +39,16 @@ cvar_t *bot_remove_near_waypoints = NULL;
 #endif
 
 void FreeObservations (void);
+void BotInitAim (void);
+void UpdatePlayerPosHistory(int msec);
 
 void BotInitMap (const char *mapname)
 {
+	BotInitAim();
 	BotClearObjectives();
 	BotClearGoals();
 	memset(bots.movement, 0, sizeof(bots.movement));
+	memset(bots.goals, 0, sizeof(bots.goals));
 	BotReadWaypoints(mapname);
 	Q_strncpyz(bots.levelname, mapname, sizeof(bots.levelname));
 	// todo - alocate/read in data.
@@ -99,6 +103,7 @@ void BotInitLibrary (void)
 #ifdef _DEBUG
 	bot_remove_near_waypoints = bi.cvar("bot_remove_near_waypoints", "0", 0);
 #endif
+	BotInitAim();
 }
 
 
@@ -110,8 +115,9 @@ void BotShutdown (void)
 void BotRunFrame (int msec, float level_time)
 {
 	bots.level_time = level_time;
-	BotUpdateGoals(msec);;
+	BotUpdateGoals(msec);
 	BotUpdateMovement(msec);
+	UpdatePlayerPosHistory(msec);
 }
 
 

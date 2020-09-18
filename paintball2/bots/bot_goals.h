@@ -29,12 +29,14 @@ typedef enum {
 	BOT_GOAL_MAX_COUNT
 } botgoaltype_t;
 
+
 typedef struct {
 	botgoaltype_t	type;
 	vec3_t			pos;
 	qboolean		changed;
 	qboolean		active;
 	int				timeleft_msec;
+	qboolean		has_flag;
 } botgoal_t;
 
 
@@ -45,5 +47,6 @@ void BotSetGoal (int bot_index, botgoaltype_t goal, vec3_t position);
 void BotRetryGoal (int bot_index);
 void BotClearGoals (void);
 void BotPathfindComplete (int bot_index);
+void BotGoalWander (int bot_index, int time_ms);
 
 #endif // _BOT_GOALS_H_

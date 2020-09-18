@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014 Nathan "jitspoe" Wulf, Digital Paint
+Copyright (c) 2014-2020 Nathan "jitspoe" Wulf, Digital Paint
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -50,6 +50,7 @@ typedef struct botmovedata_s {
 	vec3_t				last_target_pos;
 	int					last_target_msec; // time since target was last seen, in ms.
 	qboolean			shooting;
+	float				shooting_commit_time; // how much time left this bot is going to commit to shooting.
 	short				time_since_last_turn; // used for wandering
 	short				time_til_try_path; // used for wandering
 	float				last_yaw;
@@ -65,8 +66,8 @@ typedef struct botmanager_s {
 	botmovedata_t		movement[MAX_BOTS];
 	botgoal_t			goals[MAX_BOTS];
 	int					count; // total number of bots currently in the map
-	char				names_to_readd[MAX_BOTS][64]; // bots to readd after map change
-	int					num_to_readd; // number of botss to readd
+	char				names_to_readd[MAX_BOTS][64]; // bots to re-add after map change
+	int					num_to_readd; // number of botss to re-add
 	float				level_time;
 	float				last_waypoint_add_time;
 	char				levelname[MAX_QPATH];
