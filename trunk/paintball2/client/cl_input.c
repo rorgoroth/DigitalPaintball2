@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 
 cvar_t	*cl_nodelta;
+cvar_t	*cl_displayjumptime;
 
 extern	unsigned	sys_frame_time;
 unsigned	frame_msec;
@@ -69,6 +70,14 @@ void KeyDown (kbutton_t *b)
 	int		k;
 	char	*c;
 	
+	// jitodo quick test:
+	if (b == &in_up && cl_displayjumptime->value) {
+		static unsigned int last_time = 0;
+		unsigned int current_time = sys_frame_time;
+		Com_Printf("Time between jump input: %d ms\n", current_time - last_time);
+		last_time = sys_frame_time;
+	}
+
 	c = Cmd_Argv(1);
 	if (c[0])
 		k = atoi(c);
@@ -342,6 +351,13 @@ void CL_ClampPitch (void)
 		cl.viewangles[PITCH] = -89 - pitch;
 }
 
+void CL_ClampYaw (void) // jityawcrashfix -- if the character spins around enough, there can be floating point crashes, lol.  Also makes aim wonky.
+{
+	float yaw = cl.viewangles[YAW];
+	float clamped_yaw = fmod(yaw, 360.0);
+	cl.viewangles[YAW] = clamped_yaw;
+}
+
 /*
 ==============
 CL_FinishMove
@@ -384,6 +400,7 @@ void CL_FinishMove (usercmd_t *cmd)
 
 	cmd->msec = ms;
 	CL_ClampPitch();
+	CL_ClampYaw(); // jityawcrashfix
 
 	for (i = 0; i < 3; i++)
 		cmd->angles[i] = ANGLE2SHORT(cl.viewangles[i]);
@@ -474,7 +491,8 @@ void CL_InitInput (void)
 	Cmd_AddCommand("impulse", IN_Impulse);
 	Cmd_AddCommand("+klook", IN_KLookDown);
 	Cmd_AddCommand("-klook", IN_KLookUp);
-	cl_nodelta = Cvar_Get ("cl_nodelta", "0", 0);
+	cl_nodelta = Cvar_Get("cl_nodelta", "0", 0);
+	cl_displayjumptime = Cvar_Get("cl_displayjumptime", "0", 0);
 }
 
 
