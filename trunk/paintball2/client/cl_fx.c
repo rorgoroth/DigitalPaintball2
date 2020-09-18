@@ -2215,14 +2215,14 @@ void CL_AddParticles (void)
 	active = NULL;
 	tail = NULL;
 
-	for (p=active_particles ; p ; p=next)
+	for (p = active_particles; p; p = next)
 	{
 		next = p->next;
+		time = (cl.time - p->time) * 0.001f; // jit - fix uninitialized variable.
 
 		// PMM - added INSTANT_PARTICLE handling for heat beam
 		if (p->alphavel != INSTANT_PARTICLE)
 		{
-			time = (cl.time - p->time)*0.001;
 			alpha = p->alpha + time*p->alphavel;
 			if (alpha <= 0)
 			{	// faded out
