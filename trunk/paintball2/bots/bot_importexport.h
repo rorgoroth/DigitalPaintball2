@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef _BOT_IMPORTEXPORT_H_
 #define _BOT_IMPORTEXPORT_H_
 
-#define BOT_API_VERSION 1
+#define BOT_API_VERSION 2
 
 typedef enum {
 	BOT_OBJECTIVE_TYPE_UNSET = 0,
@@ -89,6 +89,9 @@ typedef struct
 	void		(*DisconnectBot) (edict_t *ent);
 	qboolean	(*IsGroundEntityWorld) (const edict_t *ent);
 	qboolean	(*IsEnemy) (const edict_t *ent, const edict_t *other);
+	edict_t		*(*GetPlayerEntity) (int player_index);
+	qboolean	(*CanInteract) (const edict_t *ent);
+	int			(*GetPlayerIndexFromEnt) (const edict_t *ent);
 
 	char		unset[64];
 } bot_import_t;

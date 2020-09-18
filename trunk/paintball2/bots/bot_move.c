@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014-2015 Nathan "jitspoe" Wulf, Digital Paint
+Copyright (c) 2014-2020 Nathan "jitspoe" Wulf, Digital Paint
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -266,16 +266,16 @@ void BotFollowWaypoint (unsigned int bot_index, int msec)
 
 
 // Wander around with no navmesh
-#define BOT_WANDER_TRACE_DISTANCE 500.0f
+#define BOT_WANDER_TRACE_DISTANCE 1000.0f
 #define BOT_WANDER_SPIN_DIST 16.0f // 16 units from a wall - practically touching, time to turn around
 #define BOT_WANDER_RAND_ANGLE_FAR 10.0f
-#define BOT_WANDER_RAND_ANGLE_NEAR 100.0f
-#define BOT_WANDER_TRACE_FAR 400.0f // Beyond this point, use far angles
-#define BOT_WANDER_TRACE_NEAR 48.0f // Interpolate between this and far for the rand angles, use near rand angles below this value
+#define BOT_WANDER_RAND_ANGLE_NEAR 180.0f
+#define BOT_WANDER_TRACE_FAR 500.0f // Beyond this point, use far angles
+#define BOT_WANDER_TRACE_NEAR 128.0f // Interpolate between this and far for the rand angles, use near rand angles below this value
 #define WALKABLE_NORMAL_Z 0.707106f // for walkable slopes (hills/ramps)
 #define BOT_WANDER_MAX_TURN_SPEED_FAR 180.0f // degrees/sec
 #define BOT_WANDER_MAX_TURN_SPEED_NEAR 180.0f / 0.2f // Can spin 180 in 100ms
-#define BOT_WANDER_CAST_INTERVAL 200 // cast every 200ms
+#define BOT_WANDER_CAST_INTERVAL 300 // cast every 300ms
 
 void BotWanderNoNav (unsigned int botindex, int msec)
 {
@@ -324,7 +324,7 @@ void BotWanderNoNav (unsigned int botindex, int msec)
 
 		if (movement->last_trace_dist < BOT_WANDER_TRACE_FAR)
 		{
-			float ratio = (movement->last_trace_dist - BOT_WANDER_TRACE_NEAR) / BOT_WANDER_TRACE_FAR;
+			float ratio = (movement->last_trace_dist - BOT_WANDER_TRACE_NEAR) / (BOT_WANDER_TRACE_FAR - BOT_WANDER_TRACE_NEAR);
 
 			if (ratio < 0.0f)
 				ratio = 0.0f;
@@ -333,16 +333,19 @@ void BotWanderNoNav (unsigned int botindex, int msec)
 			max_turn_speed = BOT_WANDER_MAX_TURN_SPEED_FAR * ratio + BOT_WANDER_MAX_TURN_SPEED_NEAR * (1.0f - ratio);
 		}
 
-		yaw_right = (yaw + nu_rand(rand_angle));
-		yaw_left = (yaw - nu_rand(rand_angle));
+		yaw_right = (yaw - nu_rand(rand_angle));
+		yaw_left = (yaw + nu_rand(rand_angle));
 
-		// Cast out 9000 units in a couple random directions, and see which cast goes further.
+		// Cast out in a couple random directions, and see which cast goes further.
 		vec_right[0] = pos[0] + cos(DEG2RAD(yaw_right)) * BOT_WANDER_TRACE_DISTANCE;
 		vec_right[1] = pos[1] + sin(DEG2RAD(yaw_right)) * BOT_WANDER_TRACE_DISTANCE;
 		vec_right[2] = pos[2];
 		vec_left[0] = pos[0] + cos(DEG2RAD(yaw_left)) * BOT_WANDER_TRACE_DISTANCE;
 		vec_left[1] = pos[1] + sin(DEG2RAD(yaw_left)) * BOT_WANDER_TRACE_DISTANCE;
 		vec_left[2] = pos[2];
+
+		DrawDebugLine(pos, vec_right, 1.0, 0.0, 0.0, (float)BOT_WANDER_CAST_INTERVAL * 0.001f, -1);
+		DrawDebugLine(pos, vec_left, 0.0, 0.0, 1.0, (float)BOT_WANDER_CAST_INTERVAL * 0.001f, -1);
 
 		VectorCopy(ent->mins, mins);
 		VectorCopy(ent->maxs, maxs);
@@ -360,10 +363,13 @@ void BotWanderNoNav (unsigned int botindex, int msec)
 		{
 			float tracedist = trace_left.fraction * BOT_WANDER_TRACE_DISTANCE;
 
-			if (tracedist < BOT_WANDER_SPIN_DIST)
-				yaw_left -= 170.0f;
 
-			movement->yawspeed = (yaw_left - yaw) * 1000.0f / (float)BOT_WANDER_CAST_INTERVAL;
+			BotSetDesiredAimAnglesFromPoint(botindex, vec_left);
+			/* This stuff doesn't work anymore since the aiming logic is handled elsewhere.
+			if (tracedist < BOT_WANDER_SPIN_DIST)
+				yaw_left += 170.0f;
+
+			movement->yawspeed = (yaw_left - yaw) / ((float)BOT_WANDER_CAST_INTERVAL * 0.001f);*/
 			movement->last_trace_dist = tracedist;
 			movement->time_since_last_turn = 0;
 		}
@@ -371,10 +377,11 @@ void BotWanderNoNav (unsigned int botindex, int msec)
 		{
 			float tracedist = trace_right.fraction * BOT_WANDER_TRACE_DISTANCE;
 
-			if (tracedist < BOT_WANDER_SPIN_DIST)
-				yaw_right += 170.0f;
+			BotSetDesiredAimAnglesFromPoint(botindex, vec_right);
+			/*if (tracedist < BOT_WANDER_SPIN_DIST)
+				yaw_right -= 170.0f;
 
-			movement->yawspeed = (yaw_right - yaw) * 1000.0f / (float)BOT_WANDER_CAST_INTERVAL;
+			movement->yawspeed = (yaw_right - yaw) / ((float)BOT_WANDER_CAST_INTERVAL * 0.001f);*/
 			movement->last_trace_dist = tracedist;
 			movement->time_since_last_turn = 0;
 		}
@@ -393,6 +400,11 @@ void BotWanderNoNav (unsigned int botindex, int msec)
 		movement->yawspeed = max_turn_speed;
 
 	movement->forward = MOVE_SPEED;
+	
+	if (nu_rand(1.0f) > 0.1f) // throw in some random jumps for good measure.
+		movement->up = MOVE_SPEED;
+	else
+		movement->up = 0;
 }
 
 void BotWander (unsigned int bot_index, int msec)

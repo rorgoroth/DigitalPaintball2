@@ -24,6 +24,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../game/game.h"
 
 
+#define MAX_BOT_OBJECTIVES 32 // don't think we'll have more than 32 flags/capture zones/etc. in any game mode.  Increase if needed.
+
+
 typedef struct {
 	bot_objective_type_t	objective_type;
 	const edict_t			*ent;
@@ -32,7 +35,6 @@ typedef struct {
 	qboolean				active;
 } bot_objective_t;
 
-#define MAX_BOT_OBJECTIVES 32 // don't think we'll have more than 32 flags/capture zones/etc. in any game mode.  Increase if needed.
 
 bot_objective_t		g_bot_objectives[MAX_BOT_OBJECTIVES];
 int					g_bot_num_objectives = 0;
@@ -134,6 +136,22 @@ void BotPathfindComplete (int bot_index)
 }
 
 
+void BotGoalWander (int bot_index, int msec)
+{
+	botgoal_t *goal = bots.goals + bot_index;
+	int random_point = (int)nu_rand(g_bot_waypoints.num_points); // todo: pick randomly select several and use the most player-popular one.
+
+	if (bot_debug->value)
+		bi.dprintf("Wandering.\n");
+
+	goal->active = true;
+	goal->type = BOT_GOAL_WANDER;
+	goal->changed = true;
+	VectorCopy(g_bot_waypoints.positions[random_point], goal->pos);
+	goal->timeleft_msec = msec;
+}
+
+
 void BotUpdateGoals (int msec)
 {
 	int bot_index;
@@ -153,9 +171,14 @@ void BotUpdateGoals (int msec)
 		if (!goal->active)
 		{
 			qboolean wander = true;
+			float wander_chance = 0.5f; // 50% chance to wander by default
 
-			// 20% chance of wandering for a few seconds for now.
-			if (nu_rand(1) < 0.2f)
+			if (goal->has_flag)
+			{
+				wander_chance = 0.1f; // 90% chance to go for an objective when carrying flag
+			}
+
+			if (nu_rand(1.0f) > wander_chance)
 			{
 				if (bot_debug->value)
 					bi.dprintf("Looking for a goal.\n");
@@ -175,14 +198,24 @@ void BotUpdateGoals (int msec)
 						{
 							if (active_objective_index == random_objective_index)
 							{
+								int axis;
+
 								if (bot_debug->value)
 									bi.dprintf("Going with objective %d (%d).\n", active_objective_index, i);
 
 								goal->active = true;
 								goal->type = BOT_GOAL_REACH_POSITION;
 								goal->changed = true;
-								goal->timeleft_msec = 60000;
+								goal->timeleft_msec = (int)nu_rand(70000.0f); // 0-70 seconds.
 								VectorCopy(objective->ent->s.origin, goal->pos);
+								// Bases have a pos of 0 but mins/maxs define a volume, so randomly pick a location in that volume.  Guess that'll give us some slight variation on flag grabs and such as well.
+								for (axis = 0; axis < 3; ++axis)
+								{
+									float min = objective->ent->mins[axis];
+									float max = objective->ent->maxs[axis];
+									
+									goal->pos[axis] += min + nu_rand(max - min);
+								}
 								wander = false;
 								break;
 							}
@@ -200,16 +233,7 @@ void BotUpdateGoals (int msec)
 
 			if (wander)
 			{
-				int random_point = (int)nu_rand(g_bot_waypoints.num_points); // todo: pick randomly select several and use the most player-popular one.
-
-				if (bot_debug->value)
-					bi.dprintf("Wandering.\n");
-
-				goal->active = true;
-				goal->type = BOT_GOAL_WANDER;
-				goal->changed = true;
-				VectorCopy(g_bot_waypoints.positions[random_point], goal->pos);
-				goal->timeleft_msec = 10000; // 10 seconds
+				BotGoalWander(bot_index, (int)nu_rand(20000)); // wander for 10-20 seconds
 			}
 		}
 
