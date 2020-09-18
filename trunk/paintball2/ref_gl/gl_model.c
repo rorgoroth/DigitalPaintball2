@@ -285,7 +285,7 @@ model_t *Mod_ForName (const char *name, qboolean crash) // jit - added const
 		break;
 	
 	case IDBSPHEADER:
-		loadmodel->extradata = Hunk_Begin(0x1000000);
+		loadmodel->extradata = Hunk_Begin(0x2000000);
 		Q_strncpyz(current_map_name, name, sizeof(current_map_name)); // jitnodraw
 		Mod_LoadBrushModel(mod, buf);
 
