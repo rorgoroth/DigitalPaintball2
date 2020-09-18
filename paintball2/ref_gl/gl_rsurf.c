@@ -1316,11 +1316,12 @@ void R_DrawInlineBModel (entity_t *e)
 		if (((psurf->flags & SURF_PLANEBACK) && (dot < -BACKFACE_EPSILON)) ||
 			(!(psurf->flags & SURF_PLANEBACK) && (dot > BACKFACE_EPSILON)))
 		{
-			if (psurf->flags & SURF_UNDERWATER) // jitcaustics
-			{
-				psurf->causticchain = r_caustic_surfaces;
-				r_caustic_surfaces = psurf;
-			}
+			//// This crashes when switching maps for some reason.  Inline bmodels are still trying to render during the transition between maps?!  Also, the caustiscs don't move with the bmodel.
+			//if (psurf->flags & SURF_UNDERWATER) // jitcaustics
+			//{
+			//	psurf->causticchain = r_caustic_surfaces;
+			//	r_caustic_surfaces = psurf;
+			//}
 
 			if (psurf->texinfo->flags & (SURF_TRANS33|SURF_TRANS66))
 			{	// add to the translucent chain
