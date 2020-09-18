@@ -307,6 +307,7 @@ void CL_PrepRefresh (void)
 
 	// let the render dll load the map
 	Q_strncpyz(mapname, cl.configstrings[CS_MODELS + 1] + 5, sizeof(mapname));	// skip "maps/"
+	Cvar_FullSet("mapname", mapname, CVAR_NOSET, true); // jit - set the mapname cvar on the client as well
 	COM_StripExtension(mapname, mapname, sizeof(mapname));
 
 	// register models, pics, and skins
