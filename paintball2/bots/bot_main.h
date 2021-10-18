@@ -68,5 +68,6 @@ void BotUpdateGoals (int msec);
 // bot_aim.c
 void BotAimAndShoot (int botindex, int msec);
 void BotSetDesiredAimAnglesFromPoint (int botindex, const vec3_t point);
+void VecToAngles (vec3_t value1, vec3_t angles);
 
 #endif

@@ -143,9 +143,11 @@ void BotFollowWaypoint (unsigned int bot_index, int msec)
 			float dist_sq;
 			vec3_t bot_to_current_waypoint, current_to_next_waypoint;
 			vec3_t vec_diff;
+			float dist;
 			vec3_t forward, right;
 			float forward_dot, right_dot;
 			qboolean waypoint_passed = false;
+			qboolean check_for_ladder = false;
 			static float test_vel_offset = 0.1f;
 			float test_threshold = 20.0f;
 			const vec_t *current_waypoint_pos = movement->waypoint_path.end_pos;
@@ -236,6 +238,11 @@ void BotFollowWaypoint (unsigned int bot_index, int msec)
 			AngleVectors(ent->s.angles, forward, right, NULL);
 			forward_dot = DotProduct2(forward, vec_diff);
 			right_dot = DotProduct2(right, vec_diff);
+			dist = VectorLength(vec_diff);
+			if (vec_diff[2] / dist > 0.7)
+			{
+				check_for_ladder = true;
+			}
 
 			// Default moving forward
 			movement->forward = MOVE_SPEED;
@@ -250,6 +257,7 @@ void BotFollowWaypoint (unsigned int bot_index, int msec)
 					movement->forward = -MOVE_SPEED;
 			}
 
+
 			if (right_dot > test_threshold)
 				movement->side = MOVE_SPEED;
 			else if (right_dot < -test_threshold)
@@ -260,6 +268,38 @@ void BotFollowWaypoint (unsigned int bot_index, int msec)
 				movement->up = MOVE_SPEED;
 			else
 				movement->up = 0;
+
+			if (check_for_ladder)
+			{
+				vec3_t forward;
+				vec3_t forward_spot;
+				trace_t trace;
+				float angle_add = 0.0f;
+				vec3_t angles;
+				VectorCopy(ent->s.angles, angles);
+
+				while (angle_add < 359.0f)
+				{
+					angles[YAW] = ent->s.angles[YAW] + angle_add;
+					AngleVectors(angles, forward, NULL, NULL);
+					VectorNormalize(forward);
+					VectorMA(ent->s.origin, 16.0f, forward, forward_spot);
+					//trace = pm->trace(ent->s.origin, pm->mins, pm->maxs, forward_spot);
+					trace = bi.trace(ent->s.origin, ent->mins, ent->maxs, forward_spot, ent, MASK_PLAYERSOLID);
+
+					if ((trace.fraction < 1.0f) && (trace.contents & CONTENTS_LADDER))
+					{
+						VecToAngles(trace.plane.normal, angles);
+						movement->need_jump = true;
+						movement->up = MOVE_SPEED;
+						movement->forward = MOVE_SPEED;
+						movement->desired_angles[YAW] = angles[YAW] + 180.0; // 180 degrees from the direction of the normal
+						movement->desired_angles[PITCH] = -45.0f; // Up is negative?
+						break;
+					}
+					angle_add += 90.0f;
+				}
+			}
 		}
 	}
 }

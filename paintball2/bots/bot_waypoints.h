@@ -43,16 +43,22 @@ typedef struct {
 	int		debug_ids[MAX_WAYPOINT_CONNECTIONS];
 } bot_waypoint_connection_t;
 
+typedef enum {
+	WP_TYPE_GROUND = 0,
+	WP_TYPE_LADDER = 1,
+	WP_TYPE_WATER = 2,
+} waypoint_type_t;
 
 typedef struct {
-	vec3_t		positions[MAX_WAYPOINTS];
+	vec3_t			positions[MAX_WAYPOINTS];
 	bot_waypoint_connection_t connections[MAX_WAYPOINTS];
-	int			usage_weights[MAX_WAYPOINTS]; // how often players touch this waypoint.
-	int			debug_ids[MAX_WAYPOINTS];
-	int			num_points;
-	float		last_moved_times[MAX_WAYPOINTS]; // Time the waypoint has last been moved/replaced, so we can avoid recalculating some stuff.
-	float		temp_dists_sq[MAX_WAYPOINTS]; // used for sorting
-	int			temp_sorted_indexes[MAX_WAYPOINTS];
+	int				usage_weights[MAX_WAYPOINTS]; // how often players touch this waypoint.
+	int				debug_ids[MAX_WAYPOINTS];
+	waypoint_type_t	types[MAX_WAYPOINTS]; // Not really used, yet.
+	int				num_points;
+	float			last_moved_times[MAX_WAYPOINTS]; // Time the waypoint has last been moved/replaced, so we can avoid recalculating some stuff.
+	float			temp_dists_sq[MAX_WAYPOINTS]; // used for sorting
+	int				temp_sorted_indexes[MAX_WAYPOINTS];
 } bot_waypoints_t;
 
 

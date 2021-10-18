@@ -29,8 +29,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "bot_waypoints.h"
 
 
-
-
 //typedef short shortpos_t[3]; // net positions are compressed to shorts at 1/8 unit, anyway, so might as well store waypoints at that resolution to save memory.
 
 
@@ -383,7 +381,7 @@ void BotWaypointUpdateConnections (int waypoint_index, const edict_t *ent)
 
 #define MAX_NODES_ALREADY_UPDATED_CHECK 32
 
-void BotAddWaypointAtIndex (const edict_t *ent, int waypoint_index, const vec3_t pos, qboolean replacing, int usage_weight)
+void BotAddWaypointAtIndex (const edict_t *ent, int waypoint_index, const vec3_t pos, const waypoint_type_t waypoint_type, qboolean replacing, int usage_weight)
 {
 	int i;
 	int debug_sphere_id = g_bot_waypoints.debug_ids[waypoint_index]; // This value should be initialized to -1, so a new ID will be generated when the debug sphere is drawn
@@ -395,6 +393,7 @@ void BotAddWaypointAtIndex (const edict_t *ent, int waypoint_index, const vec3_t
 		usage_weight = MAX_WAYPOINT_USAGE_WEIGHT;
 
 	g_bot_waypoints.usage_weights[waypoint_index] = usage_weight;
+	g_bot_waypoints.types[waypoint_index] = waypoint_type;
 
 	// Only update the last moved time if the position actually changes.
 	if (!VectorCompare(pos, g_bot_waypoints.positions[waypoint_index]))
@@ -472,10 +471,10 @@ void BotAddWaypointAtIndex (const edict_t *ent, int waypoint_index, const vec3_t
 }
 
 
-#define RANDOM_WAYPOINT_REMOVAL_POOL_SIZE 8 // When randomly removing a waypoint, pick between 4 at random, and see which is "best" to remove.
+#define RANDOM_WAYPOINT_REMOVAL_POOL_SIZE 8 // When randomly removing a waypoint, pick between 8 at random, and see which is "best" to remove.
 
 
-void BotTryAddWaypoint (const edict_t *ent, const vec3_t pos)
+void BotTryAddWaypoint (const edict_t *ent, const vec3_t pos, waypoint_type_t waypoint_type)
 {
 	vec3_t diff_vec;
 	float dist_sq;
@@ -493,14 +492,14 @@ void BotTryAddWaypoint (const edict_t *ent, const vec3_t pos)
 		{
 			int waypoint_usage = g_bot_waypoints.usage_weights[i];
 
-			BotAddWaypointAtIndex(ent, i, pos, true, waypoint_usage + 1);
+			BotAddWaypointAtIndex(ent, i, pos, waypoint_type, true, waypoint_usage + 1);
 			return;
 		}
 	}
 
 	if (g_bot_waypoints.num_points < MAX_WAYPOINTS)
 	{
-		BotAddWaypointAtIndex(ent, g_bot_waypoints.num_points, pos, false, 1);
+		BotAddWaypointAtIndex(ent, g_bot_waypoints.num_points, pos, waypoint_type, false, 1);
 	}
 	else
 	{
@@ -538,7 +537,7 @@ void BotTryAddWaypoint (const edict_t *ent, const vec3_t pos)
 		if (best_waypoint_index >= 0)
 			new_waypoint_index = best_waypoint_index;
 
-		BotAddWaypointAtIndex(ent, new_waypoint_index, pos, true, 1);
+		BotAddWaypointAtIndex(ent, new_waypoint_index, pos, waypoint_type, true, 1);
 	}
 }
 
@@ -647,7 +646,7 @@ void BotAddPotentialWaypointFromPmove (player_observation_t *observation, const 
 
 		if (add_waypoint)
 		{
-			BotTryAddWaypoint(ent, waypoint_pos); // todo: waypoint types (ladder, ground, jump, etc?)
+			BotTryAddWaypoint(ent, waypoint_pos, on_ladder ? WP_TYPE_LADDER : WP_TYPE_GROUND);
 			VectorCopy(waypoint_pos, observation->last_waypoint_pos);
 			observation->last_waypoint_time = bots.level_time;
 		}
@@ -728,7 +727,7 @@ void BotReadWaypoints (const char *mapname)
 				{
 					fread(pos_short, sizeof(pos_short), 1, fp);
 					Short3ToVec3(pos_short, pos);
-					BotTryAddWaypoint(NULL, pos);
+					BotTryAddWaypoint(NULL, pos, WP_TYPE_GROUND); // TODO: Read and write waypoint types.
 				}
 			}
 			else
