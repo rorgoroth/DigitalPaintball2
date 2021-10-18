@@ -671,7 +671,7 @@ void LoadPNG (const char *name, byte **pic, int *width, int *height)
 
 	*pic = malloc (png_get_image_height(png_ptr, info_ptr) * rowbytes);
 
-	for (i = 0; i < (png_get_image_height(png_ptr, info_ptr) * *height); i++)
+	for (i = 0; i < png_get_image_height(png_ptr, info_ptr); i++)
 		row_pointers[i] = *pic + i*rowbytes;
 
 	png_read_image(png_ptr, row_pointers);
