@@ -2543,6 +2543,18 @@ static int CPUID_Features(void)
         :
         : "%eax", "%ecx", "%edx", "%edi"
         );
+# elif defined(__GNUC__) && defined(__x86_64__)
+	__asm__ (
+"	movq	%%rbx,%%rdi\n"
+"	xorq	%%rax,%%rax\n"
+"	incq	%%rax\n"
+"	cpuid\n"
+"	movq %%rdx,%0\n"
+"	movq %%rdi,%%rdx\n"
+	: "=m" (features)
+	:
+	: "%rax", "%rcx", "%rdx", "%rdi"
+	);
 # elif (defined(_MSC_VER) && defined(_M_IX86)) || defined(__WATCOMC__)
         __asm {
         xor     eax, eax

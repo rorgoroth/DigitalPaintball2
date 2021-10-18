@@ -248,6 +248,7 @@ endif
 
 ifeq ($(OSTYPE),Linux)
 ifeq ($(strip $(BUILD_ALSA_SND)),YES)
+LDFLAGS+= -lpthread
 ALSALDFLAGS=-lasound
 endif
 endif
@@ -760,7 +761,6 @@ else
 endif
 	@cp -rv linux/paintball2_datadir.run linux/paintball2.png $(DATADIR)
 	@chmod +x $(DATADIR)/paintball2_datadir.run
-	@cp -rv linux/paintball2.desktop /home/*/Desktop/Paintball2
 	@ln -sfv $(DATADIR)/paintball2_datadir.run $(SYSBINDIR)/paintball2
 	@printf "Symlinking executable to $(SYSBINDIR)\n"
 ifeq ($(strip $(BUILD_DEDICATED)),YES)
