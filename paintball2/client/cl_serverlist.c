@@ -481,11 +481,9 @@ void M_AddToServerList (netadr_t adr, char *info, qboolean pinging)
 
 	if (!added) // doesn't exist.  Add it.
 	{
-		i++;
-
 		// List too big?  Alloc more memory:
 		// STL would be useful about now
-		if (i > m_serverlist.actualsize) 
+		if (m_serverlist.numservers == m_serverlist.actualsize) 
 		{
 			char ***templistview_info;
 			char **tempinfo;
@@ -545,7 +543,7 @@ void M_AddToServerList (netadr_t adr, char *info, qboolean pinging)
 				text_copy(format_info_from_serverlist_server(&m_serverlist.server[m_serverlist.numservers]));
 
 			m_serverlist.listview_info[m_serverlist.nummapped] =
-					create_listview_info(&m_serverlist.server[i]);
+				create_listview_info(&m_serverlist.server[m_serverlist.numservers]);
 
 			m_serverlist.server[m_serverlist.numservers].remap = m_serverlist.nummapped;
 			m_serverlist.nummapped++;
