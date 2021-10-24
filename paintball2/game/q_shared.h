@@ -41,9 +41,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <time.h>
-
+#include <unistd.h>
+#include <ctype.h>
 #include <xmmintrin.h> // jitsimd
+#include <cpuid.h>
 
 #ifdef _WIN32
 #else
@@ -392,8 +395,8 @@ int		Sys_Milliseconds (void);
 void	Sys_Mkdir (char *path);
 
 // large block stack allocation routines
-void	*Hunk_Begin (int maxsize);
-void	*Hunk_Alloc (int size);
+void*	Hunk_Begin (int maxsize);
+void*	Hunk_Alloc (int size);
 void	Hunk_Free (void *buf);
 int		Hunk_End (void);
 
@@ -1480,4 +1483,8 @@ void Q_strncatz (char *dest, const char *src, size_t size);
 void Q_strncpyzna (char *dest, const char *src, size_t size); // jit
 void strip_garbage (char *cout, const char *cin, size_t size_out); // jit
 
+#endif
+
+#ifndef WIN32
+char* strlwr(char *s);
 #endif

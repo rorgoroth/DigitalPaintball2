@@ -27,9 +27,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../win32/glw_win.h"
 #else
 #include "../linux/glw_linux.h"
+#include <unistd.h>
 #include <ctype.h>
 #include <dlfcn.h>
-char *strlwr(char*); // defined in q_shlinux.c
+
 #endif
 
 qgl_t qgl; // jitglstruct
@@ -6107,18 +6108,18 @@ int		Draw_DebugLine (const vec_t *start, const vec_t *end, float r, float g, flo
 int		Draw_DebugSphere (const vec_t *pos, float radius, float r, float g, float b, float time, int id); // jitdebugdraw
 
 
-int Draw_GetIntVarByID (int id)
+intptr_t Draw_GetIntVarByID (int id)
 {
 	switch (id)
 	{
 	case VARID_GL_INSTANCE:
 #ifdef WIN32
-		return (int)glw_state.hinstOpenGL;
+		return (intptr_t)glw_state.hinstOpenGL;
 #else
-		return (int)glw_state.OpenGLLib;
+		return (intptr_t)glw_state.OpenGLLib;
 #endif
 	case VARID_QGL:
-		return (int)&qgl;
+		return (intptr_t)&qgl;
 	default:
 		assert(0);
 		return 0;
