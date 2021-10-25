@@ -170,7 +170,7 @@ BASE_CFLAGS=-I$(LOCALBASE)/include -I$(X11BASE)/include \
             -Dstricmp=strcasecmp -D_inline= -DSleep=usleep \
             -DGAME_NAME='\"$(GAME_NAME)\"'\
 	    -DPAINTBALL2_VERSION='\"$(VERSION)\"' \
-	    -DBUILD_VERSION='\"$(BUILD)\"' -Wno-pointer-sign \
+	    -DBUILD_VERSION='\"$(BUILD)\"' -Wno-unused-result -Wno-pointer-sign \
             -D_THREAD_SAFE -fno-stack-protector -msse
 
 ifneq ($(strip $(USE_X86_ASM)),YES)
