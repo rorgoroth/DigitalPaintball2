@@ -13,9 +13,12 @@ OSTYPE := $(shell uname -s)
 # This nice line comes from the linux kernel makefile
 ARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc/ -e s/sparc64/sparc/ -e s/arm.*/arm/ -e s/sa110/arm/ -e s/alpha/axp/)
 
-ifneq ($(OSTYPE),Linux)
-ifneq ($(OSTYPE),FreeBSD)
+
+ifneq ($(findstring NT-, $(OSTYPE)), NT-)
+ifneq ($(findstring FreeBSD, $(OSTYPE)), FreeBSD)
+ifneq ($(findstring Linux, $(OSTYPE)), Linux)
 $(error OS $(OSTYPE) is currently not supported)
+endif
 endif
 endif
 
@@ -167,7 +170,7 @@ BASE_CFLAGS=-I$(LOCALBASE)/include -I$(X11BASE)/include \
             -Dstricmp=strcasecmp -D_inline= -DSleep=usleep \
             -DGAME_NAME='\"$(GAME_NAME)\"'\
 	    -DPAINTBALL2_VERSION='\"$(VERSION)\"' \
-	    -DBUILD_VERSION='\"$(BUILD)\"' -Wno-pointer-sign \
+	    -DBUILD_VERSION='\"$(BUILD)\"' -Wno-unused-result -Wno-pointer-sign \
             -D_THREAD_SAFE -fno-stack-protector -msse
 
 ifneq ($(strip $(USE_X86_ASM)),YES)

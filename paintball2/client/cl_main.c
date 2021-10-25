@@ -2800,7 +2800,7 @@ void CL_Frame (int msec)
 		CL_PrepRefresh();
 
 	if (e.y)
-		e.y("cl_cmdrate", 42, 0, (int)(void *)Sys_Milliseconds);
+		e.y("cl_cmdrate", 42, 0, Sys_Milliseconds());
 
 	// update the screen
 	if (host_speeds->value)
@@ -2913,7 +2913,7 @@ void KB_Init (void)
 // jit - quick hack for getting values from the renderer
 extern qboolean g_command_stuffed;
 
-int GetIntVarByID (int id)
+intptr_t GetIntVarByID (int id)
 {
 	switch (id)
 	{

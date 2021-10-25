@@ -24,7 +24,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdio.h>
 #include <GL/gl.h>
-#include "glext.h"
+#include <GL/glext.h>
+#include <GL/glcorearb.h>
+
+#ifdef __unix__
+#include <GL/glx.h>
+#endif
+
 #include <math.h>
 
 #ifndef GL_COLOR_INDEX8_EXT

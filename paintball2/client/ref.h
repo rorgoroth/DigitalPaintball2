@@ -22,6 +22,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "../qcommon/qcommon.h"
 
+#define	API_VERSION		4
+
 #define	MAX_DLIGHTS		32
 #define	MAX_STAINS		32
 #define	MAX_ENTITIES	512 // jit (was 128)
@@ -49,9 +51,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define SHELL_WHITE_COLOR	0xD7
 
+#define ENTITY_FLAGS  		68
+#define BORDERED_PIC_COORD_COUNT 9
+
 typedef struct entity_s
 {
-	struct model_s	*model;			// opaque type outside refresh
+	struct model_s*		model;			// opaque type outside refresh
 	float			angles[3];
 
 	/*
@@ -77,8 +82,8 @@ typedef struct entity_s
 	float			alpha;					// ignore if RF_TRANSLUCENT isn't set
 
 	//struct	image_s	*skin;			// NULL for inline skin
-	struct image_s	*skins[MAX_MESHSKINS]; // jitskm
-	struct model_s	*weapon_model; // jitskm
+	struct image_s*		skins[MAX_MESHSKINS]; // jitskm
+	struct model_s*		weapon_model; // jitskm
 	int				flags;
 
 	// jit: for smoke:
@@ -91,7 +96,6 @@ typedef struct entity_s
 	vec3_t			startorigin;
 } entity_t;
 
-#define ENTITY_FLAGS  68
 
 typedef struct
 {
@@ -121,7 +125,7 @@ typedef struct {
 
 typedef struct
 {
-	int			x, y, width, height;// in virtual screen coordinates
+	int		x, y, width, height;		// in virtual screen coordinates
 	float		fov_x, fov_y;
 	float		vieworg[3];
 	float		viewangles[3];
@@ -129,21 +133,20 @@ typedef struct
 	float		time;				// time is uesed to auto animate
 	int			rdflags;			// RDF_UNDERWATER, etc
 
-	byte		*areabits;			// if not NULL, only areas with set bits will be drawn
-
-	lightstyle_t	*lightstyles;	// [MAX_LIGHTSTYLES]
+	byte*		areabits;			// if not NULL, only areas with set bits will be drawn
+	lightstyle_t*	lightstyles;			// [MAX_LIGHTSTYLES]
 
 	int			num_entities;
-	entity_t	*entities;
+	entity_t*	entities;
 
 	int			num_dlights;
-	dlight_t	*dlights;
+	dlight_t*	dlights;
 
 	int			num_particles;
-	particle_t	*particles;
+	particle_t*	particles;
 
 	int			num_newstains;
-	stain_t		*newstains;
+	stain_t*	newstains;
 } refdef_t;
 
 
@@ -179,31 +182,26 @@ typedef struct image_s
 	int		width, height;				// source image
 	int		upload_width, upload_height;	// after power of two and picmip
 	int		registration_sequence;		// 0 = free
-	struct msurface_s	*texturechain;	// for sort-by-texture world drawing
+	struct msurface_s*	texturechain;			// for sort-by-texture world drawing
 	int		texnum;						// gl texture binding
 	float	sl, tl, sh, th;				// 0,0 - 1,1 unless part of the scrap
 	qboolean	scrap;
 	qboolean	has_alpha;
-
 	qboolean paletted;
-
 	qboolean is_cin;					// Heffo - To identify a cin texture's image_t
-
-	struct rscript_s	*rscript;		// jitrscript
+	struct rscript_s*	rscript;			// jitrscript
 	qboolean is_crosshair;				// viciouz - crosshair scale
 } image_t;
 
-#define BORDERED_PIC_COORD_COUNT 9
 
 typedef struct bordered_pic_data_s
 {
 	float	screencoords[BORDERED_PIC_COORD_COUNT][4];
 	float	texcoords[BORDERED_PIC_COORD_COUNT][4];
-	image_t	*image;
+	image_t*	image;
 } bordered_pic_data_t;
 
 
-#define	API_VERSION		4
 
 //
 // these are the functions exported by the refresh module
@@ -233,10 +231,10 @@ typedef struct
 	// an implicit "pics/" prepended to the name. (a pic name that starts with a
 	// slash will not use the "pics/" prefix or the ".pcx" postfix)
 	void	(*BeginRegistration) (const char *map);
-	struct model_s *(*RegisterModel) (const char *name);
+	struct model_s*	(*RegisterModel) (const char *name);
 	//struct image_s *(*RegisterSkin) (char *name);
 	void	(*RegisterSkin) (const char *name, struct model_s *model, struct image_s **skins); // jitskm
-	struct image_s *(*RegisterPic) (const char *name);
+	struct image_s*	(*RegisterPic) (const char *name);
 	void	(*SetSky) (const char *name, float rotate, vec3_t axis);
 	void	(*EndRegistration) (void);
 
@@ -257,7 +255,7 @@ typedef struct
 	void	(*DrawStringAlpha) (float x, float y, const char *str, float alpha); // jit -- transparent strings (for fading out)
 	int		(*DrawGetStates) (void);
 
-	image_t	*(*DrawFindPic) (const char *name);
+	image_t*	(*DrawFindPic) (const char *name);
 
 	// Draw images for cinematic rendering (which can have a different palette). Note that calls
 	void	(*DrawStretchRaw) (int x, int y, int w, int h, int cols, int rows, byte *data);
@@ -273,7 +271,7 @@ typedef struct
 
 	void	(*AppActivate)(qboolean activate);
 
-	int		(*DrawGetIntVarByID)(int id);
+	intptr_t	(*DrawGetIntVarByID)(int id);
 
 	// Like DrawPic2, but lets you specify the texture coordinates
 	void	(*DrawSubPic) (float x, float y, float w, float h, float tx1, float ty1, float tx2, float ty2, image_t *image);
@@ -295,7 +293,7 @@ typedef struct
 	void	(*Cmd_AddCommand) (char *name, void(*cmd)(void));
 	void	(*Cmd_RemoveCommand) (char *name);
 	int		(*Cmd_Argc) (void);
-	char	*(*Cmd_Argv) (int i);
+	char*		(*Cmd_Argv) (int i);
 	void	(*Cmd_ExecuteText) (int exec_when, char *text);
 
 	void	(*Con_Printf) (int print_level, char *str, ...);
@@ -308,37 +306,37 @@ typedef struct
 	int		(*FS_LoadFile) (const char *name, void **buf);
 	int		(*FS_LoadFileZ) (const char *name, void **buf); // jit
 	void	(*FS_FreeFile) (void *buf);
-	char	**(*FS_ListFiles) (const char *findname, int *numfiles, unsigned musthave, unsigned canthave, qboolean sort); // jitrscript
+	char**		(*FS_ListFiles) (const char *findname, int *numfiles, unsigned musthave, unsigned canthave, qboolean sort); // jitrscript
 	void	(*FS_FreeFileList) (char **list, int n); // jit
-	char	*(*FS_NextPath) (char*); // jitrscript
+	char*		(*FS_NextPath) (char*); // jitrscript
 
 	// gamedir will be the current directory that generated
 	// files should be stored to, ie: "f:\quake\id1"
-	char	*(*FS_Gamedir) (void);
+	char*		(*FS_Gamedir) (void);
 
-	cvar_t	*(*Cvar_Get) (const char *name, const char *value, int flags);
-	cvar_t	*(*Cvar_Set) (const char *name, const char *value);
+	cvar_t*		(*Cvar_Get) (const char *name, const char *value, int flags);
+	cvar_t*		(*Cvar_Set) (const char *name, const char *value);
 	void	 (*Cvar_SetValue) (const char *name, float value);
 
-	testexport_t *e;
+	testexport_t*	e;
 //jitmenu	void		(*Vid_MenuInit)( void );
 	void		(*Vid_NewWindow) (int width, int height);
-	void		*(*Z_Malloc) (size_t size); // jitmalloc
+	void*		(*Z_Malloc) (size_t size); // jitmalloc
 	void		(*Z_Free) (void *ptr); // jitmalloc
 	qboolean	(*M_MenuActive) (void); // jitmenu, jitlinux
 	void		(*M_MouseMove) (int, int); // jitmenu, jitlinux
-	int			(*GetIntVarByID) (int); // jit
+	intptr_t	(*GetIntVarByID) (int); // jit
 } refimport_t;
 
 typedef struct
 {
 	void	(*Com_Printf) (char *str, ...);
 	void	(*Cbuf_ExecuteText) (int exec_when, char *text);
-	cvar_t	*(*Cvar_Get) (const char *name, const char *value, int flags);
-	cvar_t	*(*Cvar_Set) (const char *name, const char *value);
+	cvar_t*		(*Cvar_Get) (const char *name, const char *value, int flags);
+	cvar_t*		(*Cvar_Set) (const char *name, const char *value);
 	int		(*FS_LoadFileZ) (const char *path, void **buffer);
 	void	(*FS_FreeFile) (void *buffer);
-	int		(*GetIntVarByID) (int id);
+	intptr_t	(*GetIntVarByID) (int id);
 } testimport_t;
 
 // this is the only function actually exported at the linker level

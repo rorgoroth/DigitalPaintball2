@@ -1841,7 +1841,7 @@ CL_FlyParticles
 #define	BEAMLENGTH			16
 void CL_FlyParticles (vec3_t origin, int count)
 {
-	int			i;
+	int		i,j;
 	cparticle_t	*p;
 	float		angle;
 	float		sr, sp, sy, cr, cp, cy;
@@ -1855,8 +1855,11 @@ void CL_FlyParticles (vec3_t origin, int count)
 
 	if (!avelocities[0][0])
 	{
-		for (i=0 ; i<NUMVERTEXNORMALS*3 ; i++)
-			avelocities[0][i] = (rand()&255) * 0.01;
+		for (i=0; i < NUMVERTEXNORMALS; i++)
+		{
+			for(j = 0; j < sizeof(vec3_t) / sizeof(vec_t); i++)
+				avelocities[i][j] = ((rand()&UINT8_MAX)) * 0.01;
+		}
 	}
 
 
@@ -1943,7 +1946,7 @@ CL_BfgParticles
 #define	BEAMLENGTH			16
 void CL_BfgParticles (entity_t *ent)
 {
-	int			i;
+	int		i,j;
 	cparticle_t	*p;
 	float		angle;
 	float		sr, sp, sy, cr, cp, cy;
@@ -1954,8 +1957,9 @@ void CL_BfgParticles (entity_t *ent)
 	
 	if (!avelocities[0][0])
 	{
-		for (i=0 ; i<NUMVERTEXNORMALS*3 ; i++)
-			avelocities[0][i] = (rand()&255) * 0.01;
+		for (i=0 ; i < NUMVERTEXNORMALS; i++)
+			for (j=0 ; j < sizeof(vec3_t) / sizeof(vec_t); j++)
+			avelocities[i][j] = (rand()&UINT8_MAX) * 0.01;
 	}
 
 
