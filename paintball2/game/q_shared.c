@@ -17,7 +17,8 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-#include "q_shared.h"
+#include "../qcommon/qcommon.h"
+
 #ifdef WIN32
 #include <io.h>
 #else
@@ -2528,48 +2529,19 @@ void strip_garbage (char *cout, const char *cin, size_t size_out) // jit b43
 
 // for x86 cpus only...  (x64 has SSE2_PRESENT)
 // code from SDL, shortened as we can expect CPUID to work
-static int CPUID_Features(void)
+static int CPUID_Features(int function_id, int features[4])
 {
-	int features = 0;
-# if defined(__GNUC__) && defined(__i386__)
-        __asm__ (
-"        movl    %%ebx,%%edi\n"
-"        xorl    %%eax,%%eax                                           \n"
-"        incl    %%eax                                                 \n"
-"        cpuid                       # Get family/model/stepping/features\n"
-"        movl    %%edx,%0                                              \n"
-"        movl    %%edi,%%ebx\n"
-        : "=m" (features)
-        :
-        : "%eax", "%ecx", "%edx", "%edi"
-        );
-# elif defined(__GNUC__) && defined(__x86_64__)
-	__asm__ (
-"	movq	%%rbx,%%rdi\n"
-"	xorq	%%rax,%%rax\n"
-"	incq	%%rax\n"
-"	cpuid\n"
-"	movq %%rdx,%0\n"
-"	movq %%rdi,%%rdx\n"
-	: "=m" (features)
-	:
-	: "%rax", "%rcx", "%rdx", "%rdi"
-	);
-# elif (defined(_MSC_VER) && defined(_M_IX86)) || defined(__WATCOMC__)
-        __asm {
-        xor     eax, eax
-        inc     eax
-        cpuid                       ; Get family/model/stepping/features
-        mov     features, edx
-        }
-# else
-#  error no CPUID implementation
-# endif
-	return features;
+#if ((defined(__GNUC__) || defined(__clang__)) && (defined(__i386__) || defined(__i686__) || defined(__amd64__) || defined(__x86_64__)))
+	return __get_cpuid_count(function_id, 0, &features[0], &features[2], &features[3], &features[4]);
+#elif (defined(_MSC_VER) && (defined(_M_I86) || defined(_M_IX86) || defined(_M_X64) || defined(_M_AMD64)))
+	#include <intrin.h>
+	return __cpuid(&features[0], function_id);
+#endif
 }
 
 qboolean Sys_HaveSSE (void)
-{/*
+{
+
 	// COMMANDLINEOPTION: SSE: -nosse disables SSE support and detection
 	if (COM_CheckParm("-nosse"))
 		return false;
@@ -2577,8 +2549,10 @@ qboolean Sys_HaveSSE (void)
 	// COMMANDLINEOPTION: SSE: -forcesse enables SSE support and disables detection
 	if (COM_CheckParm("-forcesse") || COM_CheckParm("-forcesse2"))
 		return true;
-*/
-	if (CPUID_Features() & (1 << 25))
+
+	int features[4] = { 0 };
+	CPUID_Features(1, features);
+	if(features[3] & bit_SSE || features[3] & bit_SSE2)
 		return true;
 
 	return false;

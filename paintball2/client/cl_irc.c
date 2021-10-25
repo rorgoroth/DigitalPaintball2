@@ -48,7 +48,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # include <errno.h>
 # include <pthread.h>
   typedef int irc_socket_t;
-# if !defined HAVE_CLOSESOCKET
+# if !defined HAVE_CLOSESOCKET && !defined closesocket
 #  define closesocket close
 # endif
 # if !defined INVALID_SOCKET
