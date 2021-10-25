@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -55,7 +55,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <X11/cursorfont.h>
 
 #ifdef USE_XF86_DGA
-#include <X11/extensions/xf86dga.h>
+#include <X11/extensions/Xxf86dga.h>
 #endif
 #include <X11/extensions/xf86vmode.h>
 #ifdef Joystick
@@ -131,7 +131,7 @@ extern cvar_t  *print_keymap;
 
 static Cursor CreateNullCursor(Display *display, Window root)
 {
-    Pixmap cursormask; 
+    Pixmap cursormask;
     XGCValues xgc;
     GC gc;
     XColor dummycolour;
@@ -156,7 +156,7 @@ static void install_grabs(void)
 
 // inviso cursor
   XDefineCursor(dpy, win, CreateNullCursor(dpy, win));
-  
+
   XGrabPointer(dpy, win,
 	       True,
 	       0,
@@ -164,12 +164,12 @@ static void install_grabs(void)
 	       win,
 	       None,
 	       CurrentTime);
-  
+
 #ifdef USE_XF86_DGA
   if (in_dgamouse->value) {
     int MajorVersion, MinorVersion;
-    
-    if (!XF86DGAQueryVersion(dpy, &MajorVersion, &MinorVersion)) { 
+
+    if (!XF86DGAQueryVersion(dpy, &MajorVersion, &MinorVersion)) {
       // unable to query, probalby not supported
       ri.Con_Printf( PRINT_ALL, "Failed to detect XF86DGA Mouse\n" );
       ri.Cvar_Set( "in_dgamouse", "0" );
@@ -178,21 +178,21 @@ static void install_grabs(void)
       XF86DGADirectVideo(dpy, DefaultScreen(dpy), XF86DGADirectMouse);
       XWarpPointer(dpy, None, win, 0, 0, 0, 0, 0, 0);
     }
-  } else 
+  } else
 #endif
   {
     XWarpPointer(dpy, None, win,
 		 0, 0, 0, 0,
 		 vid.width / 2, vid.height / 2);
   }
-  
+
   XGrabKeyboard(dpy, win,
 		False,
 		GrabModeAsync, GrabModeAsync,
 		CurrentTime);
-  
+
   mouse_active = true;
-  
+
   //	XSync(dpy, True);
 }
 
@@ -200,39 +200,39 @@ static void uninstall_grabs(void)
 {
   if (!dpy || !win)
     return;
-  
+
 #ifdef USE_XF86_DGA
   if (dgamouse) {
     dgamouse = false;
     XF86DGADirectVideo(dpy, DefaultScreen(dpy), 0);
   }
 #endif
-  
+
   XUngrabPointer(dpy, CurrentTime);
   XUngrabKeyboard(dpy, CurrentTime);
-  
+
   // inviso cursor
   XUndefineCursor(dpy, win);
-  
+
   mouse_active = false;
 }
 
-static void IN_DeactivateMouse (void) 
+static void IN_DeactivateMouse (void)
 {
   //if (!mouse_avail || !dpy || !win)
   //return;
-  
+
   if (mouse_active) {
     uninstall_grabs();
     mouse_active = false;
   }
 }
 
-static void IN_ActivateMouse (void) 
+static void IN_ActivateMouse (void)
 {
   //if (!mouse_avail || !dpy || !win)
   //return;
-  
+
   if (!mouse_active) {
     mx = my = 0; // don't spazz
     install_grabs();
@@ -275,11 +275,11 @@ static int XLateKey(XKeyEvent *ev)
 	int key;
 	char buf[64];
 	KeySym keysym;
-	
+
 	key = 0;
-	
+
 	XLookupString(ev, buf, sizeof buf, &keysym, 0);
-	
+
 	switch(keysym){
 		case XK_KP_Page_Up:
 			key = K_KP_PGUP;
@@ -287,107 +287,107 @@ static int XLateKey(XKeyEvent *ev)
 		case XK_Page_Up:
 			key = K_PGUP;
 			break;
-			
+
 		case XK_KP_Page_Down:
 			key = K_KP_PGDN;
 			break;
 		case XK_Page_Down:
 			key = K_PGDN;
 			break;
-			
+
 		case XK_KP_Home:
 			key = K_KP_HOME;
 			break;
 		case XK_Home:
 			key = K_HOME;
 			break;
-			
+
 		case XK_KP_End:
 			key = K_KP_END;
 			break;
 		case XK_End:
 			key = K_END;
 			break;
-			
+
 		case XK_KP_Left:
 			key = K_KP_LEFTARROW;
 			break;
 		case XK_Left:
 			key = K_LEFTARROW;
 			break;
-			
+
 		case XK_KP_Right:
 			key = K_KP_RIGHTARROW;
 			break;
 		case XK_Right:
 			key = K_RIGHTARROW;
 			break;
-			
+
 		case XK_KP_Down:
 			key = K_KP_DOWNARROW;
 			break;
 		case XK_Down:
 			key = K_DOWNARROW;
 			break;
-			
+
 		case XK_KP_Up:
 			key = K_KP_UPARROW;
 			break;
 		case XK_Up:
 			key = K_UPARROW;
 			break;
-			
+
 		case XK_Escape:
 			key = K_ESCAPE;
 			break;
-			
+
 		case XK_KP_Enter:
 			key = K_KP_ENTER;
 			break;
 		case XK_Return:
 			key = K_ENTER;
 			break;
-			
+
 		case XK_Tab:
 			key = K_TAB;
 			break;
-			
+
 		case XK_F1:
 			key = K_F1;
 			break;
-			
+
 		case XK_F2:
 			key = K_F2;
 			break;
-			
+
 		case XK_F3:
 			key = K_F3;
 			break;
-			
+
 		case XK_F4:
 			key = K_F4;
 			break;
-			
+
 		case XK_F5:
 			key = K_F5;
 			break;
-			
+
 		case XK_F6:
 			key = K_F6;
 			break;
-			
+
 		case XK_F7:
 			key = K_F7;
 			break;
-			
+
 		case XK_F8:
 			key = K_F8;
 			break;
-			
+
 		case XK_F9:
 			key = K_F9;
 			break;
-			
+
 		case XK_F10:
 			/*if(ev->type == KeyPress){
 				if(vid_fullscreen->value){  //toggle fullscreen
@@ -400,12 +400,12 @@ static int XLateKey(XKeyEvent *ev)
 					ri.Cvar_SetValue("vid_width", vid.width * 2);
 					ri.Cvar_SetValue("vid_height", vid.height * 2);
 				}
-				
+
 				ri.Cmd_ExecuteText(EXEC_NOW, "vid_restart");
 			}*/
 			key = K_F10;  //remove if adding quetoo vid_width, ..
 			break;
-			
+
 		case XK_F11:
 			/*if(ev->type == KeyPress){
 				if(_windowed_mouse->value)  //and windowed mouse
@@ -414,55 +414,55 @@ static int XLateKey(XKeyEvent *ev)
 			}*/
 			key = K_F11;  //remove if adding _windowed_mouse back
 			break;
-			
+
 		case XK_F12:
 			key = K_F12;
 			break;
-			
+
 		case XK_BackSpace:
 			key = K_BACKSPACE;
 			break;
-			
+
 		case XK_KP_Delete:
 			key = K_KP_DEL;
 			break;
 		case XK_Delete:
 			key = K_DEL;
 			break;
-			
+
 		case XK_Pause:
 			key = K_PAUSE;
 			break;
-			
+
 		case XK_Shift_L:
 		case XK_Shift_R:
 			key = K_SHIFT;
 			break;
-			
+
 		case XK_Execute:
 		case XK_Control_L:
 		case XK_Control_R:
 			key = K_CTRL;
 			break;
-			
+
 		case XK_Alt_L:
 		case XK_Meta_L:
 		case XK_Alt_R:
 		case XK_Meta_R:
 			key = K_ALT;
 			break;
-			
+
 		case XK_KP_Begin:
 			key = K_KP_5;
 			break;
-			
+
 		case XK_Insert:
 			key = K_INS;
 			break;
 		case XK_KP_Insert:
 			key = K_KP_INS;
 			break;
-			
+
 		case XK_KP_Multiply:
 			key = '*';
 			break;
@@ -487,7 +487,7 @@ static int XLateKey(XKeyEvent *ev)
         	case 186: /* Spain */
 			key = '~';
 			break;
-		
+
 		default:
 			key = *(unsigned char*)buf;
 			if(key >= 'A' && key <= 'Z')
@@ -496,11 +496,11 @@ static int XLateKey(XKeyEvent *ev)
 				key = key + 'a' - 1;
 			break;
 	}
-        
+
 	if (print_keymap->value) {
 		printf( "Key '%c' (%d) -> '%c' (%d)\n", (int)keysym, (int)keysym, key, key );
 	}
-	
+
 	return key;
 }
 
@@ -538,14 +538,14 @@ static void HandleEvents(void)
 	int mwx = vid.width / 2;
 	int mwy = vid.height / 2;
 	in_state_t *in_state = getState();
-	
+
 	if(!dpy)
 		return;
-		
+
 	while(XPending(dpy)){
-	
+
 		XNextEvent(dpy, &event);
-		
+
 		switch(event.type){
 			case KeyPress:
 				myxtime = event.xkey.time;
@@ -553,18 +553,18 @@ static void HandleEvents(void)
 				if(in_state && in_state->Key_Event_fp)
 					in_state->Key_Event_fp(XLateKey(&event.xkey), event.type == KeyPress);
 				break;
-				
+
 			case MotionNotify:
 				if(mouse_active){
 					if(true){//if(_windowed_mouse->value){
 						int xoffset = ((int)event.xmotion.x - mwx);
 						int yoffset = ((int)event.xmotion.y - mwy);
-						
+
 						if(xoffset != 0 || yoffset != 0){
-						
+
 							mx += xoffset;
 							my += yoffset;
-							
+
 							XSelectInput(dpy, win, X_MASK & ~PointerMotionMask);
 							XWarpPointer(dpy, None, win, 0, 0, 0, 0, mwx, mwy);
 							XSelectInput(dpy, win, X_MASK);
@@ -574,16 +574,16 @@ static void HandleEvents(void)
 						my +=((int)event.xmotion.y - mwy) * 2;
 						mwx = event.xmotion.x;
 						mwy = event.xmotion.y;
-						
+
 						if(mx || my)
 							dowarp = true;
 					}
 				}
 				break;
-				
+
 			case ButtonPress:
 				myxtime = event.xbutton.time;
-				
+
 				b = -1;
 				if(event.xbutton.button == 1)
 					b = 0;
@@ -598,7 +598,7 @@ static void HandleEvents(void)
 				if(b >= 0 && in_state && in_state->Key_Event_fp)
 					in_state->Key_Event_fp(K_MOUSE1 + b, true);
 				break;
-				
+
 			case ButtonRelease:
 				b = -1;
 				if(event.xbutton.button == 1)
@@ -614,29 +614,29 @@ static void HandleEvents(void)
 				if(b >= 0 && in_state && in_state->Key_Event_fp)
 					in_state->Key_Event_fp(K_MOUSE1 + b, false);
 				break;
-				
+
 			case CreateNotify:
 				win_x = event.xcreatewindow.x;
 				win_y = event.xcreatewindow.y;
 				break;
-				
+
 			case ConfigureNotify:
 				win_x = event.xconfigure.x;
 				win_y = event.xconfigure.y;
 				break;
-				
+
 			case ClientMessage:
 				if(event.xclient.data.l[0] == wmDeleteWindow)
 					ri.Cmd_ExecuteText(EXEC_NOW, "quit");
 				break;
-				
+
 			case MapNotify:
 				if(true){//if(_windowed_mouse->value){
 					XGrabPointer(dpy, win, True, 0, GrabModeAsync,
 								  GrabModeAsync, win, None, CurrentTime);
 				}
 				break;
-				
+
 			case UnmapNotify:
 				if(true){//if(_windowed_mouse->value){
 					XUngrabPointer(dpy, CurrentTime);
@@ -644,10 +644,10 @@ static void HandleEvents(void)
 				break;
 		}
 	}
-	
+
 	/*if(old_windowed_mouse != _windowed_mouse->value){
 		old_windowed_mouse = _windowed_mouse->value;
-		
+
 		if(!_windowed_mouse->value){  //ungrab pointer
 			XUngrabPointer(dpy, CurrentTime);
 		} else {  //grab pointer
@@ -655,9 +655,9 @@ static void HandleEvents(void)
 						  GrabModeAsync, win, None, CurrentTime);
 		}
 	}*/
-	
+
 	if(dowarp){  //move cursor to center
-		XWarpPointer(dpy, None, win, 
+		XWarpPointer(dpy, None, win,
 				0, 0, 0, 0, vid.width / 2, vid.height / 2
 		);
 	}
@@ -690,14 +690,14 @@ char *RW_Sys_GetClipboardData()
 	unsigned char *data;
 	int format, result;
 	char *ret = NULL;
-			
+
 	sowner = XGetSelectionOwner(dpy, XA_PRIMARY);
-			
+
 	if (sowner != None) {
 		property = XInternAtom(dpy,
 				       "GETCLIPBOARDDATA_PROP",
 				       False);
-				
+
 		XConvertSelection(dpy,
 				  XA_PRIMARY, XA_STRING,
 				  property, win, myxtime); /* myxtime == time of last X event */
@@ -806,7 +806,7 @@ rserr_t GLimp_SetMode (int *pwidth, int *pheight, int width, int height, qboolea
 
 	// Get video mode list
 	MajorVersion = MinorVersion = 0;
-	if (!XF86VidModeQueryVersion(dpy, &MajorVersion, &MinorVersion)) { 
+	if (!XF86VidModeQueryVersion(dpy, &MajorVersion, &MinorVersion)) {
 		vidmode_ext = false;
 	} else {
 		ri.Con_Printf(PRINT_ALL, "Using XFree86-VidModeExtension Version %d.%d\n",
@@ -862,7 +862,7 @@ rserr_t GLimp_SetMode (int *pwidth, int *pheight, int width, int height, qboolea
 
 	if (vidmode_ext) {
 		int best_fit, best_dist, dist, x, y;
-		
+
 		XF86VidModeGetAllModeLines(dpy, scrnum, &num_vidmodes, &vidmodes);
 
 		if (XF86VidModeGetGamma(dpy, scrnum, &oldgamma)) {
@@ -914,7 +914,7 @@ rserr_t GLimp_SetMode (int *pwidth, int *pheight, int width, int height, qboolea
 	attr.colormap = XCreateColormap(dpy, root, visinfo->visual, AllocNone);
 	attr.event_mask = X_MASK;
 	if (vidmode_active) {
-		mask = CWBackPixel | CWColormap | CWSaveUnder | CWBackingStore | 
+		mask = CWBackPixel | CWColormap | CWSaveUnder | CWBackingStore |
 			CWEventMask | CWOverrideRedirect;
 		attr.override_redirect = True;
 		attr.backing_store = NotUseful;
@@ -925,7 +925,7 @@ rserr_t GLimp_SetMode (int *pwidth, int *pheight, int width, int height, qboolea
 	win = XCreateWindow(dpy, root, 0, 0, width, height,
 						0, visinfo->depth, InputOutput,
 						visinfo->visual, mask, &attr);
-	
+
 	sizehints = XAllocSizeHints();
 	if (sizehints) {
 		sizehints->min_width = width;
@@ -934,10 +934,10 @@ rserr_t GLimp_SetMode (int *pwidth, int *pheight, int width, int height, qboolea
 		sizehints->max_height = height;
 		sizehints->base_width = width;
 		sizehints->base_height = vid.height;
-		
+
 		sizehints->flags = PMinSize | PMaxSize | PBaseSize;
 	}
-	
+
 	wmhints = XAllocWMHints();
 	if (wmhints) {
 		#include "q2icon.xbm"
@@ -945,14 +945,14 @@ rserr_t GLimp_SetMode (int *pwidth, int *pheight, int width, int height, qboolea
 		Pixmap icon_pixmap, icon_mask;
 		unsigned long fg, bg;
 		int i;
-		
+
 		fg = BlackPixel(dpy, visinfo->screen);
 		bg = WhitePixel(dpy, visinfo->screen);
 		icon_pixmap = XCreatePixmapFromBitmapData(dpy, win, (char *)q2icon_bits, q2icon_width, q2icon_height, fg, bg, visinfo->depth);
 		for (i = 0; i < sizeof(q2icon_bits); i++)
 			q2icon_bits[i] = ~q2icon_bits[i];
-		icon_mask = XCreatePixmapFromBitmapData(dpy, win, (char *)q2icon_bits, q2icon_width, q2icon_height, bg, fg, visinfo->depth); 
-	
+		icon_mask = XCreatePixmapFromBitmapData(dpy, win, (char *)q2icon_bits, q2icon_width, q2icon_height, bg, fg, visinfo->depth);
+
 		wmhints->flags = IconPixmapHint|IconMaskHint;
 		wmhints->icon_pixmap = icon_pixmap;
 		wmhints->icon_mask = icon_mask;
@@ -964,12 +964,12 @@ rserr_t GLimp_SetMode (int *pwidth, int *pheight, int width, int height, qboolea
 		XFree(sizehints);
 	if (wmhints)
 		XFree(wmhints);
-	
+
 	XStoreName(dpy, win, WINDOW_CLASS_NAME);
-	
+
 	wmDeleteWindow = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
 	XSetWMProtocols(dpy, win, &wmDeleteWindow, 1);
-	
+
 	XMapWindow(dpy, win);
 
 	if (vidmode_active) {
@@ -1043,21 +1043,21 @@ void GLimp_Shutdown (void)
 	dpy = NULL;
 	win = 0;
 	ctx = NULL;
-/*	
+/*
 	qglXChooseVisual             = NULL;
 	qglXCreateContext            = NULL;
 	qglXDestroyContext           = NULL;
 	qglXMakeCurrent              = NULL;
 	qglXCopyContext              = NULL;
 	qglXSwapBuffers              = NULL;
-*/	
+*/
 }
 
 /*
 ** GLimp_Init
 **
 ** This routine is responsible for initializing the OS specific portions
-** of OpenGL.  
+** of OpenGL.
 */
 int GLimp_Init( void *hinstance, void *wndproc )
 {
@@ -1073,10 +1073,10 @@ int GLimp_Init( void *hinstance, void *wndproc )
 		qglXCopyContext              =  GPA("glXCopyContext");
 		qglXSwapBuffers              =  GPA("glXSwapBuffers");
 		qglXGetConfig                =  GPA("glXGetConfig");
-		
+
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -1089,7 +1089,7 @@ void GLimp_BeginFrame( float camera_separation )
 
 /*
 ** GLimp_EndFrame
-** 
+**
 ** Responsible for doing a swapbuffers and possibly for other stuff
 ** as yet to be determined.  Probably better not to make this a GLimp
 ** function and instead do a call to GLimp_SwapBuffers.
@@ -1167,13 +1167,13 @@ qboolean OpenJoystick(cvar_t *joy_dev) {
       ri.Con_Printf(PRINT_ALL, "Error #%d while looking for joysticks\n",err);
     }
     return false;
-  }  
-  
+  }
+
   for (i=0;i<pglob.gl_pathc;i++) {
     ri.Con_Printf(PRINT_ALL, "Trying joystick dev %s\n", pglob.gl_pathv[i]);
     joy_fd = open (pglob.gl_pathv[i], O_RDONLY | O_NONBLOCK);
     if (joy_fd == -1) {
-      ri.Con_Printf(PRINT_ALL, "Error opening joystick dev %s\n", 
+      ri.Con_Printf(PRINT_ALL, "Error opening joystick dev %s\n",
 		    pglob.gl_pathv[i]);
       return false;
     }
@@ -1193,7 +1193,7 @@ void PlatformJoyCommands(int *axis_vals, int *axis_map) {
   struct js_event e;
   int key_index;
   in_state_t *in_state = getState();
-  
+
   while (read(joy_fd, &e, sizeof(struct js_event))!=-1) {
     if (JS_EVENT_BUTTON & e.type) {
       key_index = (e.number < 4) ? K_JOY1 : K_AUX1;
