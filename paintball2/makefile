@@ -65,10 +65,10 @@ BUILD_DEDICATED?=NO
 # independent API). Tested on #
 # FreeBSD.                    #
 #=============================#
-HAVE_IPV6?=NO 
+HAVE_IPV6?=YES 
 
 
-#USE_SSE?=YES
+USE_SSE?=YES
 ENABLE_PROFILING?=NO
 USE_X86_ASM?=NO
 
@@ -76,13 +76,13 @@ USE_X86_ASM?=NO
 # Read from $(DATADIR) and  #
 # write to "~/.paintball2"  #
 #===========================#
-WITH_DATADIR?=NO
+WITH_DATADIR?=YES
 
 #===========================#
 # Load renderers            #
 # from $(LIBDIR)            #
 #===========================#
-WITH_LIBDIR?=NO
+WITH_LIBDIR?=YES
 
 #===========================#
 # Sound Drivers             #            
@@ -96,7 +96,7 @@ BUILD_SDL_SND?=YES       # SDL sound driver
 #===========================#
 # OGG Vorbis Support        #
 #===========================#
-WITH_OGG_SUPPORT?=NO
+WITH_OGG_SUPPORT?=YES
 
 #===========================#
 # GLX render.               #
@@ -107,18 +107,18 @@ BUILD_GLX?=YES
 # Built in DGA mouse        #
 # support.                  #
 #===========================#
-USE_XF86_DGA?=NO
+USE_XF86_DGA?=YES
 
 #===========================#
 # SDL GL render.            #
 #===========================#
-BUILD_SDLGL?=NO
+BUILD_SDLGL?=YES
 
 
 #===========================#
 # Joystick support.         #
 #===========================#
-BUILD_JOYSTICK?=NO
+BUILD_JOYSTICK?=YES
 
 # (hopefully) end of configurable options
 

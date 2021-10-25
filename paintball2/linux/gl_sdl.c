@@ -579,9 +579,9 @@ void GLimp_EndFrame (void)
 /*
 ** GLimp_SetMode
 */
-int GLimp_SetMode( int *pwidth, int *pheight, int width, int height, qboolean fullscreen )
+rserr_t GLimp_SetMode( int *pwidth, int *pheight, int width, int height, qboolean fullscreen )
 {
-	ri.Con_Printf (PRINT_ALL, "setting mode %d:", mode );
+//	ri.Con_Printf (PRINT_ALL, "setting mode %d:", mode );
 
 	*pwidth = width;
 	*pheight = height;
