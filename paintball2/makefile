@@ -126,7 +126,7 @@ VERSION=2.0
 BUILD=27
 
 MOUNT_DIR=.
-BINDIR=~/paintball2
+BINDIR=./paintball2_bin
 
 BUILD_DEBUG_DIR=build_debug
 BUILD_RELEASE_DIR=build_release
@@ -741,7 +741,8 @@ distclean:
 install:
 	@echo Copying files to your home dir
 	@echo ......
-	@cp -rv $(BINDIR) ~/
+	@mkdir -pv ~/paintball2
+	@cp -rv $(BINDIR)/* ~/paintball2
 	@cp -rv linux/paintball2.run ~/paintball2
 	@chmod +x ~/paintball2/paintball2.run
 ifeq ($(strip $(BUILD_DEDICATED)),YES)
