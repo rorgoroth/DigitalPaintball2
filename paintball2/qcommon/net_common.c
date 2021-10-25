@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "qcommon.h"
 #include "net_common.h"
+typedef unsigned long u_long;
 
 int		ip_sockets[2];
 int		server_port;
@@ -114,7 +115,7 @@ int GetHTTP (const char *url, char *received, int received_max)
 		s = url;
 
 	s2 = strchr(s, '/');
-	
+
 	if (s2)
 		len = (sizeof(szDomain) - 1 < s2 - s) ? sizeof(szDomain) - 1 : s2 - s;
 	else
@@ -311,10 +312,10 @@ qboolean NET_StringToSockaddr (const char *s, struct sockaddr *sadr)
 			if (*colon == ':')
 			{
 				*colon = 0;
-				((struct sockaddr_in *)sadr)->sin_port = htons((short)atoi(colon+1));	
+				((struct sockaddr_in *)sadr)->sin_port = htons((short)atoi(colon+1));
 			}
 		}
-		
+
 		if (copy[0] >= '0' && copy[0] <= '9')
 		{
 			*(int *)&((struct sockaddr_in *)sadr)->sin_addr = inet_addr(copy);
@@ -327,7 +328,7 @@ qboolean NET_StringToSockaddr (const char *s, struct sockaddr *sadr)
 			*(int *)&((struct sockaddr_in *)sadr)->sin_addr = *(int *)h->h_addr_list[0];
 		}
 	}
-	
+
 	return true;
 }
 
@@ -370,7 +371,7 @@ idnewt:28000
 qboolean NET_StringToAdr (const char *s, netadr_t *a)
 {
 	struct sockaddr sadr;
-	
+
 	if (Q_streq(s, "localhost"))
 	{
 		memset(a, 0, sizeof(*a));
