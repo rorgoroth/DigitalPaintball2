@@ -186,7 +186,7 @@ typedef struct
 extern	testexport_t e;
 
 int	COM_Argc (void);
-char *COM_Argv (int arg);	// range and null checked
+char*	COM_Argv (int arg);	// range and null checked
 void COM_ClearArgv (int arg);
 int COM_CheckParm (char *parm);
 void COM_AddParm (char *parm);
@@ -194,8 +194,8 @@ void COM_AddParm (char *parm);
 void COM_Init (void);
 void COM_InitArgv (int argc, char **argv);
 
-char *CopyString (const char *in);
-char *CopyStringAddNewline (const char *in);
+char*	CopyString (const char *in);
+char*	CopyStringAddNewline (const char *in);
 
 //============================================================================
 
@@ -659,12 +659,12 @@ WTF WHY WON'T THIS COMPILE?!!
 qboolean	NET_CompareAdr (netadr_t a, netadr_t b);
 qboolean	NET_CompareBaseAdr (netadr_t a, netadr_t b);
 qboolean	NET_IsLocalAddress (netadr_t adr);
-char		*NET_AdrToString (netadr_t a);
+char*		NET_AdrToString (netadr_t a);
 qboolean	NET_StringToAdr (const char *s, netadr_t *a);
 void		NET_Sleep (int msec);
 int NET_TCPSocket (int port);
 int NET_TCPConnect (SOCKET sockfd, char *net_remote_address, int port);
-char *NET_ErrorString (void);
+char*		NET_ErrorString (void);
 
 //============================================================================
 
@@ -734,12 +734,12 @@ CMODEL
 #include "../qcommon/qfiles.h"
 
 void		CM_ClearMapName (void); // jitmaphash
-cmodel_t	*CM_LoadMap (char *name, qboolean clientload, unsigned *checksum);
-cmodel_t	*CM_InlineModel (char *name);	// *1, *2, etc
+cmodel_t*	CM_LoadMap (char *name, qboolean clientload, unsigned *checksum);
+cmodel_t*	CM_InlineModel (char *name);	// *1, *2, etc
 
 int			CM_NumClusters (void);
 int			CM_NumInlineModels (void);
-char		*CM_EntityString (void);
+char*		CM_EntityString (void);
 
 // creates a clipping hull for an arbitrary box
 int			CM_HeadnodeForBox (vec3_t mins, vec3_t maxs);
@@ -803,8 +803,8 @@ FILESYSTEM
 
 void	FS_InitFilesystem (void);
 void	FS_SetGamedir (char *dir);
-char	*FS_Gamedir (void);
-char	*FS_NextPath (char *prevpath);
+char*	FS_Gamedir (void);
+char*	FS_NextPath (char *prevpath);
 void	FS_ExecAutoexec (void);
 void	FS_ExecConfig (void); // jit
 
@@ -817,7 +817,7 @@ int		FS_LoadFileZ (const char *path, void **buffer); // jit - null-terminated
 // a null buffer will just return the file length without loading
 // a -1 length is not present
 
-char **FS_ListFiles (const char *findname, int *numfiles, unsigned musthave, unsigned canthave, qboolean sort);
+char**	FS_ListFiles (const char *findname, int *numfiles, unsigned musthave, unsigned canthave, qboolean sort);
 void	FS_FreeFileList (char **list, int n); // jit
 void	FS_FreeList (char **list, int nfiles);
 void	FS_Read (void *buffer, int len, FILE *f);
@@ -872,14 +872,14 @@ qboolean PathContainsInvalidCharacters (const char *filename);
 float	frand(void);	// 0 ti 1
 float	crand(void);	// -1 to 1
 
-extern	cvar_t	*developer;
-extern	cvar_t	*dedicated;
-extern	cvar_t	*deathmatch; // jit
-extern	cvar_t	*host_speeds;
-extern	cvar_t	*log_stats;
-extern	cvar_t	*public_server;
+extern	cvar_t*	developer;
+extern	cvar_t*	dedicated;
+extern	cvar_t*	deathmatch; // jit
+extern	cvar_t*	host_speeds;
+extern	cvar_t*	log_stats;
+extern	cvar_t*	public_server;
 
-extern	FILE *log_stats_file;
+extern	FILE*	log_stats_file;
 
 // host_speeds times
 extern	int		time_before_game;
@@ -888,8 +888,8 @@ extern	int		time_before_ref;
 extern	int		time_after_ref;
 
 void Z_Free (void *ptr);
-void *Z_Malloc (size_t size);			// returns 0 filled memory
-void *Z_TagMalloc (int size, int tag);
+void*	Z_Malloc (size_t size);			// returns 0 filled memory
+void*	Z_TagMalloc (int size, int tag);
 void Z_FreeTags (int tag);
 
 void Qcommon_Init (int argc, char **argv);
@@ -953,7 +953,7 @@ void SV_Frame (int msec);
 #define VARID_GL_INSTANCE				4
 #define VARID_QGL						5
 #define VARID_SERVER_GAMEBUILD			6
-int GetIntVarByID (int id);
+intptr_t GetIntVarByID (int id);
 
 extern qboolean g_command_stuffed;
 

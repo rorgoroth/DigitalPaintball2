@@ -34,6 +34,7 @@ void RW_IN_Activate();
 #define MOUSE_MIN 40
 
 void getMouse(int *x, int *y, int *state);
+void doneMouse(void);
 
 typedef struct in_state {
   // Pointers to functions back in client, set by vid_so

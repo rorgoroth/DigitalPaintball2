@@ -78,7 +78,7 @@ extern bot_waypoints_t g_bot_waypoints;
 
 // bot_waypoints.c
 qboolean BotCanReachPosition (const edict_t *ent, const vec3_t pos1, const vec3_t pos2, qboolean *need_jump);
-void BotTryAddWaypoint (const edict_t *ent, const vec3_t pos);
+void BotTryAddWaypoint (const edict_t *ent, const vec3_t pos, waypoint_type_t waypoint_type);
 int ClosestWaypointToPosition (const vec3_t pos, float *sq_dist);
 
 // bot_astar.c

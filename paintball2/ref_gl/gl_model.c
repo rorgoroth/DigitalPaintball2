@@ -492,7 +492,7 @@ void Mod_LoadTexinfo (lump_t *l)
 	qboolean remove_nodraw = false; // jitnodraw
 	// ===
 	// jit - banana texture
-	static int easter_egg = -1;
+	static ssize_t easter_egg = -1;
 
 	if (easter_egg == -1)
 	{
@@ -500,7 +500,7 @@ void Mod_LoadTexinfo (lump_t *l)
 		time_t temptime;
 		temptime = time(NULL);
 		atm = asctime(localtime(&temptime));
-		easter_egg = (int)strstr(atm, "Apr 01");
+		easter_egg = (ssize_t)strstr(atm, "Apr 01");
 		
 		if (easter_egg)
 		{
@@ -528,8 +528,11 @@ void Mod_LoadTexinfo (lump_t *l)
 
 	for (i = 0; i < count; i++, in++, out++)
 	{
-		for (j = 0; j < 8; j++)
+		for (j = 0; j < 4; j++)
+		{
 			out->vecs[0][j] = LittleFloat(in->vecs[0][j]);
+			out->vecs[1][j] = LittleFloat(in->vecs[1][j]);
+		}
 
 		out->flags = LittleLong(in->flags);
 		
