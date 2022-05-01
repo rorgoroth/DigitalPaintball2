@@ -84,7 +84,7 @@ WITH_DATADIR?=YES
 WITH_LIBDIR?=YES
 
 #===========================#
-# Sound Drivers             #            
+# Sound Drivers             #
 #===========================#
 ifeq ($(OSTYPE),Linux)
 BUILD_ALSA_SND?=YES      # Alsa sound driver
@@ -236,7 +236,7 @@ RELEASE_CFLAGS=$(BASE_CFLAGS) -O2 -ffast-math -funroll-loops \
 	-fomit-frame-pointer -fexpensive-optimizations -fno-strict-aliasing
 endif
 
-DEBUG_CFLAGS=$(BASE_CFLAGS) -g -ggdb -pipe -ffloat-store -ffast-math -D_DEBUG 
+DEBUG_CFLAGS=$(BASE_CFLAGS) -g -ggdb -pipe -ffloat-store -ffast-math -D_DEBUG
 
 LDFLAGS=-L$(LOCALBASE)/lib -lm
 
@@ -261,7 +261,7 @@ XLDFLAGS+= -lXxf86dga
 endif
 
 ifeq ($(strip $(WITH_OGG_SUPPORT)),YES)
-LDFLAGS+= -lvorbisfile -lvorbis -logg 
+LDFLAGS+= -lvorbisfile -lvorbis -logg
 endif
 
 GLX_LDFLAGS=-L$(X11BASE)/lib$(_LIB) -L$(LOCALBASE)/lib$(_LIB) -lGL -ljpeg -lpng
@@ -318,17 +318,17 @@ TARGETS += $(BINDIR)/ref_pbsdl.$(SHLIBEXT)
 endif
 
 all:
-	@echo 
+	@echo
 	@echo Set to YES or NO at the top of this file the possible options to build by the makefile.
 	@echo By default, it will build paintball2 and glx renderer.
-	@echo 
+	@echo
 	@echo Possible targets:
 	@echo
 	@echo "   "">> Add VERBOSE=YES to a verbose compilation output, defaults to NO"
 	@echo "   "">> make release"
 	@echo "   "">> make debug"
 	@echo "   "">> make install (paintball2 home dir)."
-	@echo "   "">> make install_root (required when was built with DATADIR/LIBDIR" 
+	@echo "   "">> make install_root (required when was built with DATADIR/LIBDIR"
 	@echo "   ""                      options enabled, you must gain root privileges)."
 	@echo "   "">> make clean (clean objects)."
 	@echo "   "">> make clean_bin (clean executables)."
@@ -341,22 +341,22 @@ debug:
 		$(BINDIR) \
 		$(BUILD_DEBUG_DIR)/a3d \
 		$(BUILD_DEBUG_DIR)/client
-		
+
 ifeq ($(strip $(BUILD_DEDICATED)),YES)
 	@-mkdir -p $(BUILD_DEBUG_DIR) \
-		$(BUILD_DEBUG_DIR)/ded 
+		$(BUILD_DEBUG_DIR)/ded
 endif
 
 ifeq ($(strip $(BUILD_BOTLIB)),YES)
 	@-mkdir -p $(BUILD_DEBUG_DIR) \
-		$(BUILD_DEBUG_DIR)/bots 
+		$(BUILD_DEBUG_DIR)/bots
 endif
 
 ifeq ($(strip $(BUILD_GLX)),YES)
 	@-mkdir -p $(BUILD_DEBUG_DIR) \
 		$(BUILD_DEBUG_DIR)/ref_gl
 endif
-		
+
 ifeq ($(strip $(BUILD_SDLGL)),YES)
 	@-mkdir -p $(BUILD_DEBUG_DIR) \
 		$(BUILD_DEBUG_DIR)/ref_gl
@@ -373,25 +373,25 @@ release:
 		$(BINDIR) \
 		$(BUILD_RELEASE_DIR)/a3d \
 		$(BUILD_RELEASE_DIR)/client
-		
+
 ifeq ($(strip $(BUILD_DEDICATED)),YES)
 	@-mkdir -p $(BUILD_RELEASE_DIR) \
-		$(BUILD_RELEASE_DIR)/ded 
+		$(BUILD_RELEASE_DIR)/ded
 endif
 
 ifeq ($(strip $(BUILD_BOTLIB)),YES)
 	@-mkdir -p $(BUILD_RELEASE_DIR) \
-		$(BUILD_RELEASE_DIR)/bots 
+		$(BUILD_RELEASE_DIR)/bots
 endif
 
 ifeq ($(strip $(BUILD_GLX)),YES)
 	@-mkdir -p $(BUILD_RELEASE_DIR) \
-		$(BUILD_RELEASE_DIR)/ref_gl 
+		$(BUILD_RELEASE_DIR)/ref_gl
 endif
-		
+
 ifeq ($(strip $(BUILD_SDLGL)),YES)
 	@-mkdir -p $(BUILD_RELEASE_DIR) \
-		$(BUILD_RELEASE_DIR)/ref_gl 
+		$(BUILD_RELEASE_DIR)/ref_gl
 endif
 
 ifneq ($(VERBOSE),YES)
@@ -429,11 +429,11 @@ PB2_OBJS = \
 	$(BUILDDIR)/client/net_tcp.o   $(BUILDDIR)/client/q_shared.o      $(BUILDDIR)/client/pmove.o \
 	$(BUILDDIR)/client/snd_ogg.o   $(BUILDDIR)/client/vid_common.o	  $(BUILDDIR)/client/cl_stats.o \
 	$(BUILDDIR)/client/cl_irc.o \
-	
+
 
 CD_OBJS = \
-	$(BUILDDIR)/client/cd_linux.o 
-	
+	$(BUILDDIR)/client/cd_linux.o
+
 ifeq ($(OSTYPE),Linux)
 ifeq ($(strip $(BUILD_ALSA_SND)),YES)
 ALSA_SND_OBJS= $(BUILDDIR)/client/snd_alsa.o
@@ -477,7 +477,7 @@ $(BINDIR)/snd_alsa.$(SHLIBEXT) : $(ALSA_SND_OBJS)
 	@echo
 	$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(ALSA_SND_OBJS) $(LDFLAGS) $(ALSALDFLAGS)
 endif
-	
+
 $(BINDIR)/snd_oss.$(SHLIBEXT) : $(OSS_SND_OBJS)
 	@echo
 	@echo "**Built OSS sound driver with cflags:"
@@ -563,7 +563,7 @@ $(BUILDDIR)/client/snd_alsa.o :      $(LINUX_DIR)/snd_alsa.c;		$(DO_SHLIB_CC)
 $(BUILDDIR)/client/snd_oss.o :       $(LINUX_DIR)/snd_oss.c;		$(DO_SHLIB_CC)
 $(BUILDDIR)/client/cd_sdl.o :        $(LINUX_DIR)/cd_sdl.c;		$(DO_CC) $(SDLCFLAGS)
 $(BUILDDIR)/client/snd_sdl.o :       $(LINUX_DIR)/snd_sdl.c;		$(DO_SHLIB_CC) $(SDLCFLAGS)
-	
+
 #############################################################################
 # DEDICATED SERVER
 #############################################################################
@@ -722,7 +722,7 @@ clean:
 	$(BUILD_RELEASE_DIR)
 	@echo ...................
 	@echo .... Done
-	
+
 clean_bin:
 	@echo Cleaning binaries...
 	@-rm -rf $(BINDIR)
@@ -749,7 +749,7 @@ ifeq ($(strip $(BUILD_DEDICATED)),YES)
 	@chmod +x ~/paintball2/paintball2-dedicated.run
 endif
 	@echo .....
-	@echo Done 
+	@echo Done
 
 install_root:
 	@mkdir -pv $(DATADIR)
@@ -772,22 +772,22 @@ ifeq ($(strip $(BUILD_DEDICATED)),YES)
 	@ln -sfv $(DATADIR)/paintball2-dedicated_datadir.run $(SYSBINDIR)/paintball2-dedicated
 	@printf "Symlinking dedicated executable to $(SYSBINDIR)\n"
 endif
-	@echo 
+	@echo
 	@printf "Type paintball2 as user to start.\n"
 ifeq ($(strip $(BUILD_DEDICATED)),YES)
 	@printf "Type paintball2-dedicated as user to start a dedicated server.\n"
 endif
-	@echo 
-	@echo Done 
-	
-	
+	@echo
+	@echo Done
+
+
 bz2:
 	@printf "Creating bzip2 compressed file ...\n"
 	@cp -r linux/paintball2.run linux/paintball2-dedicated.run paintball2/
 ifeq ($(strip $(USE_SSE)),YES)
-	@tar cjvf Paintball2-$(VERSION)-build$(BUILD)-SSE-$(OSTYPE).tar.bz2 paintball2/ 
+	@tar cjvf Paintball2-$(VERSION)-build$(BUILD)-SSE-$(OSTYPE).tar.bz2 paintball2/
 else
-	@tar cjvf Paintball2-$(VERSION)-build$(BUILD)-NOSSE-$(OSTYPE).tar.bz2 paintball2/ 
+	@tar cjvf Paintball2-$(VERSION)-build$(BUILD)-NOSSE-$(OSTYPE).tar.bz2 paintball2/
 endif
 	@printf ".... Done.\n"
-	
+
