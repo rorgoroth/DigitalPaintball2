@@ -29,7 +29,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <unistd.h>
 #include <ctype.h>
 
 #include "ref.h"
@@ -41,6 +40,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "keys.h"
 #include "console.h"
 #include "cdaudio.h"
+
+#ifdef linux
+#include <unistd.h>
+#endif
 
 // ===
 // jitmultithreading

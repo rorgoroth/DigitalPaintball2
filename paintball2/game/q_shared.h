@@ -43,10 +43,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <stdint.h>
 #include <time.h>
-#include <unistd.h>
 #include <ctype.h>
 #include <xmmintrin.h> // jitsimd
+
+#ifdef linux
+#include <unistd.h>
 #include <cpuid.h>
+#endif
 
 #ifdef _WIN32
 #else
