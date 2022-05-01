@@ -30,7 +30,7 @@ static void AddBotCommand (const char *name)
 
 
 // The bot will get removed rom the manager in BotHandleDisconnect
-static void RemoveBot (edict_t *ent)
+void RemoveBot (edict_t *ent)
 {
 	bi.DisconnectBot(ent);
 }

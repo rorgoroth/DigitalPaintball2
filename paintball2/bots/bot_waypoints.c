@@ -30,9 +30,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 //typedef short shortpos_t[3]; // net positions are compressed to shorts at 1/8 unit, anyway, so might as well store waypoints at that resolution to save memory.
-
+extern cvar_t *sv_gravity;
 
 static int g_debug_trace_count = 0;
+static FILE *g_waypoint_fp = NULL;
 
 typedef short vec3short_t[3];
 
@@ -218,6 +219,88 @@ qboolean BotCanReachPosition (const edict_t *ent, const vec3_t pos1, const vec3_
 	}
 
 	return !hit_something;
+}
+
+
+#define BOT_TEST_MOVE_FRAME_ATTEMPTS 50 // TODO: Increase -- just testing a short value
+
+edict_t	*pm_passent; // Entity to ignore when doing player move traces (super sketchy, but what the original Q2 code does)
+
+// pmove doesn't need to know about passent and contentmask
+trace_t	Bot_PM_trace (const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end)
+{
+	return bi.trace(start, mins, maxs, end, pm_passent, MASK_DEADSOLID); // Deadsolid ignores monsters.  Perhaps we could make it ignore players too, so waypoints don't get blocked by live players?
+}
+
+
+// Tried actually simulating player movement walking between waypoints, but this is too slow to be viable, even when spread across multiple frames. :(
+qboolean BotCanReachPositionAccurateButSlow (const edict_t *ent, const vec3_t start_pos, const vec3_t end_pos, qboolean *need_jump)
+{
+	pmove_t		pm;
+	int			i;
+	float		unsentstepheight = 0.0f;
+	vec3_t		current_pos;
+
+	if (need_jump)
+		*need_jump = false;
+
+	// copy current state to pmove
+	memset(&pm, 0, sizeof(pm));
+	pm.trace = Bot_PM_trace;
+	pm.pointcontents = bi.pointcontents;
+	pm.cmd.msec = 25;
+	pm.s.gravity = sv_gravity->value;
+
+	for (i = 0; i < 3; ++i)
+	{
+		pm.s.origin[i] = (short)(start_pos[i] * 8.0f);
+	}
+
+	VectorCopy(start_pos, current_pos);
+
+	// simulate several frames of player movement to determine if we can reach a given point
+	for (i = 0; i < BOT_TEST_MOVE_FRAME_ATTEMPTS; ++i)
+	{
+		/// TODO: Aim toward target.
+		vec3_t direction;
+#ifdef DEBUG_REACH_POSITION
+		vec3_t new_pos;
+#endif
+		float d;
+		int j;
+
+		VectorSubtract(end_pos, current_pos, direction);
+		d = VectorNormalizeRetLen(direction);
+
+		if (d < 17.0f)
+		{
+			return true;
+		}
+
+		VecToAnglesShort(direction, pm.cmd.angles);
+		pm.cmd.forwardmove = 400;
+		bi.Pmove(&pm);
+#ifdef DEBUG_REACH_POSITION
+		for (j = 0; j < 3; ++j)
+		{
+			new_pos[j] = pm.s.origin[j] * 0.125f;
+		}
+
+		if (draw_debug)
+		{
+			DrawDebugLine(current_pos, new_pos, 0.0 + (float)i / (float)BOT_TEST_MOVE_FRAME_ATTEMPTS, 0.0, 1.0, 80.0f, -1);
+		}
+
+		VectorCopy(new_pos, current_pos);
+#else
+		for (j = 0; j < 3; ++j)
+		{
+			current_pos[j] = pm.s.origin[j] * 0.125f;
+		}
+#endif
+	}
+
+	return false;
 }
 
 
@@ -576,6 +659,7 @@ int ClosestWaypointToPosition (const vec3_t pos, float *sq_dist)
 extern cvar_t *bot_remove_near_waypoints;
 #endif
 
+
 void BotAddPotentialWaypointFromPmove (player_observation_t *observation, const edict_t *ent, const pmove_t *pm)
 {
 	vec3_t diff;
@@ -671,6 +755,14 @@ void BotWriteWaypoints (const char *mapname)
 	if (!mapname || !*mapname)
 		return;
 
+	// Still have the waypoint file open for reading.  Close without writing.
+	if (g_waypoint_fp)
+	{
+		fclose(g_waypoint_fp);
+		g_waypoint_fp = NULL;
+		return;
+	}
+
 	Com_sprintf(filename, sizeof(filename), "botnav/%s.botnav", mapname);
 	FS_CreatePath(filename);
 	fp = fopen(filename, "wb");
@@ -695,52 +787,68 @@ void BotWriteWaypoints (const char *mapname)
 	}
 }
 
+int g_num_waypoints_in_file = 0; // TODO: guaranteed 32bit type
+int g_file_waypoint_index = 0;
 
 void BotReadWaypoints (const char *mapname)
 {
 	char filename[MAX_QPATH];
-	FILE *fp;
+	//FILE *fp;
 
 	BotInitWaypoints();
 	Com_sprintf(filename, sizeof(filename), "botnav/%s.botnav", mapname);
-	fp = fopen(filename, "rb");
+	g_waypoint_fp = fopen(filename, "rb");
 
-	if (fp)
+	if (g_waypoint_fp)
 	{
 		char header[6];
-		fread(header, sizeof(header), 1, fp);
+		fread(header, sizeof(header), 1, g_waypoint_fp);
 
 		if (memcmp(header, "PB2BW", sizeof(header)) == 0)
 		{
 			int version;
-			fread(&version, sizeof(version), 1, fp);
+			fread(&version, sizeof(version), 1, g_waypoint_fp);
 
 			if (version == WAYPOINT_VERSION)
 			{
-				int num_waypoints, waypoint_index;
-				vec3short_t pos_short;
-				vec3_t pos;
-
-				fread(&num_waypoints, sizeof(num_waypoints), 1, fp);
-
-				for (waypoint_index = 0; waypoint_index < num_waypoints; ++waypoint_index)
-				{
-					fread(pos_short, sizeof(pos_short), 1, fp);
-					Short3ToVec3(pos_short, pos);
-					BotTryAddWaypoint(NULL, pos, WP_TYPE_GROUND); // TODO: Read and write waypoint types.
-				}
+				fread(&g_num_waypoints_in_file, sizeof(g_num_waypoints_in_file), 1, g_waypoint_fp);
+				g_file_waypoint_index = 0;
 			}
 			else
 			{
 				bi.dprintf("%s - Bot waypoint version differs (%d != %d).  Discarding.\n", filename, version, WAYPOINT_VERSION);
+				fclose(g_waypoint_fp);
 			}
 		}
 		else
 		{
 			bi.dprintf("%s - Invalid bot waypoint file or format has changed.  Discarding.\n", filename);
+			fclose(g_waypoint_fp);
 		}
+	}
+}
 
-		fclose(fp);
+
+// Called every frame so we can load waypoint files over time
+void BotUpdateWaypoints (void)
+{
+	if (g_waypoint_fp)
+	{
+		vec3short_t pos_short;
+		vec3_t pos;
+
+		if (g_file_waypoint_index < g_num_waypoints_in_file)
+		{
+			fread(pos_short, sizeof(pos_short), 1, g_waypoint_fp);
+			Short3ToVec3(pos_short, pos);
+			BotTryAddWaypoint(NULL, pos, WP_TYPE_GROUND); // TODO: Read and write waypoint types.
+			++g_file_waypoint_index;
+		}
+		else
+		{
+			fclose(g_waypoint_fp);
+			g_waypoint_fp = NULL;
+		}
 	}
 }
 

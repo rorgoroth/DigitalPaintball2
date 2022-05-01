@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef _BOT_IMPORTEXPORT_H_
 #define _BOT_IMPORTEXPORT_H_
 
-#define BOT_API_VERSION 2
+#define BOT_API_VERSION 4
 
 typedef enum {
 	BOT_OBJECTIVE_TYPE_UNSET = 0,
@@ -35,7 +35,7 @@ typedef enum {
 typedef struct edict_s edict_t;
 #endif
 
-// for use the game library (gamex86)
+// Set by bot lib, used by game library (gamex86)
 typedef struct
 {
 	int			apiversion;
@@ -44,7 +44,7 @@ typedef struct
 	// not each time a level is loaded.  Persistant data for clients
 	// and the server can be allocated in init.
 	void		(*Init) (void);
-	void		(*InitMap) (const char *mapname);
+	void		(*InitMap) (const char *mapname, int gamemode);
 	void		(*ShutdownMap) (void);
 	void		(*Shutdown) (void);
 	void		(*GameEvent) (game_event_t event, edict_t *ent, void *data1, void *data2);
@@ -58,12 +58,15 @@ typedef struct
 	void		(*RemoveObjective) (bot_objective_type_t objective_type, const edict_t *ent); // Called when objectives go away (ex: flag grabbed)
 	void		(*PlayerSpawn) (int player_index, int team_index, const edict_t *ent);
 	void		(*PlayerDie) (int player_index, const edict_t *ent);
+	void		(*SetDefendingTeam) (int defending_team);
 
 	// Block of unset data that will be zeroed out, in case of API changes, this will make new function pointers null,
 	// so crashes will be more obvious.
 	char		unset[64];
 } bot_export_t;
 
+
+// These are the pointers that will be set in the game dll and called from the bot dll.
 typedef struct
 {
 	int			apiversion;
@@ -92,7 +95,11 @@ typedef struct
 	edict_t		*(*GetPlayerEntity) (int player_index);
 	qboolean	(*CanInteract) (const edict_t *ent);
 	int			(*GetPlayerIndexFromEnt) (const edict_t *ent);
+	int			(*GetNumPlayersOnTeams) (); // Number of players (including bots) actively on a team (not observer)
+	int			(*GetTeam) (const edict_t *ent);
 
+	// Block of unset data that will be zeroed out, in case of API changes, this will make new function pointers null,
+	// so crashes will be more obvious.
 	char		unset[64];
 } bot_import_t;
 
