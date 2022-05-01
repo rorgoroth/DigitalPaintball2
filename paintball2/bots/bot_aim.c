@@ -72,6 +72,15 @@ void VecToAngles (vec3_t value1, vec3_t angles)
 }
 
 
+void VecToAnglesShort (vec3_t vec_val, short *angles_short)
+{
+	vec3_t angles;
+	VecToAngles(vec_val, angles);
+	angles_short[YAW] = ANGLE2SHORT(angles[YAW]);
+	angles_short[PITCH] = ANGLE2SHORT(angles[PITCH]);
+}
+
+
 void BotSetDesiredAimAnglesFromPoint (int botindex, const vec3_t point)
 {
 	botmovedata_t *movement = bots.movement + botindex;
@@ -144,6 +153,31 @@ void GetOldPlayerPosition (const edict_t *ent, vec_t *vec_out)
 	assert(playerindex >= 0 && playerindex < maxclients);
 	VectorCopy(player_pos_history[MAX_PLAYER_POS_HISTORY - 1][playerindex], vec_out);
 }
+
+
+qboolean BotHasLineOfSightToEnt (int bot_index, const edict_t *target)
+{
+	edict_t *self = bots.ents[bot_index];
+	vec3_t viewpos;
+	trace_t trace;
+
+
+	// Trace from the bot's eye position to the enemy's position + some randomization (so if only part of the enemy is showing, the bot might see it sometimes, but not all the time).
+	VectorCopy(self->s.origin, viewpos);
+	viewpos[2] += bi.GetViewHeight(self);
+	/*targetpos[2] += bi.GetViewHeight(target) + nu_rand(8) - nu_rand(16);
+	targetpos[0] += nu_rand(14) - nu_rand(14);
+	targetpos[1] += nu_rand(14) - nu_rand(14);*/
+	trace = bi.trace(viewpos, vec_zero, vec_zero, target->s.origin, self, MASK_SOLID);
+
+	// TODO: Add smoke grenade checks here.
+
+	if (trace.fraction == 1.0f || trace.ent == target)
+		return true;
+	else
+		return false;
+}
+
 
 // Called every frame -- acquire and shoot at targets.
 void BotAimAndShoot (int botindex, int msec)
@@ -299,6 +333,25 @@ void BotAimAndShoot (int botindex, int msec)
 
 	BotAimTowardDesiredAngles(botindex, msec);
 }
+
+
+// Aim at a target position (ex: flag for defensive position).  Note this will be overridden if enemies are in line of sight.
+void BotAimAtPosition (int bot_index, const vec3_t target_pos)
+{
+	botmovedata_t *movement = bots.movement + bot_index;
+
+	VectorCopy(target_pos, movement->last_target_pos);
+	BotSetDesiredAimAnglesFromPoint(bot_index, movement->last_target_pos);
+}
+
+
+void BotStopMoving (int bot_index)
+{
+	botmovedata_t *movement = bots.movement + bot_index;
+	movement->stop = true;
+	movement->waypoint_path.active = false;
+}
+
 
 // Called every server frame (.1s)
 void UpdatePlayerPosHistory (int msec)

@@ -648,9 +648,19 @@ void BotMove (unsigned int botindex, int msec)
 				if (move)
 				{
 					if (movement->waypoint_path.active)
+					{
 						BotFollowWaypoint(botindex, msec);
+					}
+					else if (movement->stop)
+					{
+						movement->forward = 0;
+						movement->side = 0;
+						movement->up = 0;
+					}
 					else
+					{
 						BotWander(botindex, msec);
+					}
 
 					BotAimAndShoot(botindex, msec);
 				}

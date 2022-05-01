@@ -30,6 +30,18 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 extern cvar_t *skill;
 extern cvar_t *bot_debug;
 
+
+#define CTFTYPE_UNKNOWN	-2
+#define CTFTYPE_NONE	-1
+#define CTFTYPE_DM		0
+#define CTFTYPE_1FLAG	1
+#define CTFTYPE_2FLAG	2
+#define CTFTYPE_SIEGE	3
+#define CTFTYPE_KOTH	4
+#define CTFTYPE_ELIM	5
+#define CTFTYPE_PONG	6
+#define CTFTYPE_TDM		7
+
 // memory tags to allow dynamic memory to be cleaned up
 #define	TAG_GAME	765		// clear when unloading the dll
 #define	TAG_LEVEL	766		// clear when loading a new level
@@ -43,7 +55,6 @@ void BotHandleGameEvent (game_event_t event, edict_t *ent, void *data1, void *da
 void BotRunFrame (int msec, float level_time);
 qboolean BotCommand (edict_t *ent, const char *cmd, const char *cmd2, const char *cmd3, const char *cmd4);
 void BotExitLevel (void);
-void BotSpawnEntities (void);
 void AddBot (const char *name);
 
 extern bot_import_t bi;
@@ -51,6 +62,8 @@ extern bot_import_t bi;
 // bot_move.c
 void BotUpdateMovement (int msec);
 void PmoveOriginToWorldOrigin (const pmove_t *pm, vec_t *origin_out);
+void BotAimAtPosition (int bot_index, const vec3_t target_pos);
+void BotStopMoving (int bot_index);
 
 // bot_observe.c
 void BotObservePlayerInput (unsigned int player_index, const edict_t *ent, const pmove_t *pm);
@@ -69,5 +82,7 @@ void BotUpdateGoals (int msec);
 void BotAimAndShoot (int botindex, int msec);
 void BotSetDesiredAimAnglesFromPoint (int botindex, const vec3_t point);
 void VecToAngles (vec3_t value1, vec3_t angles);
+void VecToAnglesShort (vec3_t vec_val, short *angles_short);
+qboolean BotHasLineOfSightToEnt (int bot_index, const edict_t *target);
 
 #endif

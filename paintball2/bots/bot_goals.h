@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 typedef enum {
 	BOT_GOAL_WANDER = 0,
 	BOT_GOAL_REACH_POSITION,
+	BOT_GOAL_DEFEND_FLAG,
 	BOT_GOAL_MAX_COUNT
 } botgoaltype_t;
 
@@ -33,6 +34,7 @@ typedef enum {
 typedef struct {
 	botgoaltype_t	type;
 	vec3_t			pos;
+	const edict_t	*ent;
 	qboolean		changed;
 	qboolean		active;
 	int				timeleft_msec;
@@ -48,5 +50,7 @@ void BotRetryGoal (int bot_index);
 void BotClearGoals (void);
 void BotPathfindComplete (int bot_index);
 void BotGoalWander (int bot_index, int time_ms);
+void BotPlayerDie (int player_index, const edict_t *ent);
+void BotSetDefendingTeam (int defending_team);
 
 #endif // _BOT_GOALS_H_

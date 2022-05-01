@@ -57,6 +57,7 @@ typedef struct botmovedata_s {
 	float				last_pitch;
 	botfollowpath_t		path_info;
 	bot_waypoint_path_t	waypoint_path;
+	qboolean			stop; // defend/camp/whatever
 	qboolean			need_jump; // need to jump next time we're on the ground.
 } botmovedata_t;
 
@@ -65,13 +66,16 @@ typedef struct botmanager_s {
 	edict_t				*ents[MAX_BOTS];
 	botmovedata_t		movement[MAX_BOTS];
 	botgoal_t			goals[MAX_BOTS];
+	int					goal_debug_spheres[MAX_BOTS];
 	int					count; // total number of bots currently in the map
 	char				names_to_readd[MAX_BOTS][64]; // bots to re-add after map change
-	int					num_to_readd; // number of botss to re-add
+	int					num_to_readd; // number of bots to re-add
 	float				level_time;
 	float				last_waypoint_add_time;
 	char				levelname[MAX_QPATH];
 	int					time_since_last_pathfind;
+	int					game_mode; // corresponds to the game's "ctfmode"
+	int					defending_team; // for siege mode
 } botmanager_t;
 
 extern botmanager_t bots;
