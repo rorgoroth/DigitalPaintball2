@@ -65,8 +65,7 @@ BUILD_DEDICATED?=NO
 # independent API). Tested on #
 # FreeBSD.                    #
 #=============================#
-HAVE_IPV6?=YES 
-
+HAVE_IPV6?=NO
 
 USE_SSE?=YES
 ENABLE_PROFILING?=NO
