@@ -178,13 +178,13 @@ static int g_astar_debug_start = -1;
 
 void AStarDebugStartPoint (vec3_t pos)
 {
-	g_astar_debug_start = ClosestWaypointToPosition(pos, NULL);
+	g_astar_debug_start = ClosestWaypointToPosition(NULL, pos);
 }
 
 
 void AStarDebugEndPoint (vec3_t pos)
 {
-	int debug_end = ClosestWaypointToPosition(pos, NULL);
+	int debug_end = ClosestWaypointToPosition(NULL, pos);
 
 	AStarFindPathFromNodeIndexes(g_astar_debug_start, debug_end, NULL);
 }
@@ -223,7 +223,7 @@ qboolean GenerateValidWaypointPos (const edict_t *ent, const vec3_t pos_in, vec_
 
 qboolean AStarFindPathFromPositions (const edict_t *ent, const vec3_t start_pos, const vec3_t end_pos, bot_waypoint_path_t *path)
 {
-	if (AStarFindPathFromNodeIndexes(ClosestWaypointToPosition(start_pos, NULL), ClosestWaypointToPosition(end_pos, NULL), path))
+	if (AStarFindPathFromNodeIndexes(ClosestWaypointToPosition(ent, start_pos), ClosestWaypointToPosition(ent, end_pos), path))
 	{
 		GenerateValidWaypointPos(ent, end_pos, path->end_pos);
 		return true;

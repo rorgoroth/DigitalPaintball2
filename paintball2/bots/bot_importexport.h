@@ -82,12 +82,12 @@ typedef struct
 	void		*(*TagMalloc) (int size, int tag);
 	void		(*TagFree) (void *block);
 	void		(*FreeTags) (int tag);
-	cvar_t		*(*cvar) (char *var_name, char *value, int flags);
+	cvar_t		*(*cvar) (char *var_name, const char *value, int flags);
 
 	void		(*ClientThink) (edict_t *ent, usercmd_t *ucmd);
 	edict_t		*(*AddBotClient) (char *userinfo);
 	const char	*(*GetClientName) (const edict_t *ent);
-	edict_t		*(*GetNextPlayerEnt) (edict_t *ent, qboolean ignore_bots);
+	edict_t		*(*GetNextLivePlayerEnt) (edict_t *ent, qboolean ignore_bots);
 	float		(*GetViewHeight) (edict_t *ent);
 	void		(*DisconnectBot) (edict_t *ent);
 	qboolean	(*IsGroundEntityWorld) (const edict_t *ent);
@@ -97,6 +97,7 @@ typedef struct
 	int			(*GetPlayerIndexFromEnt) (const edict_t *ent);
 	int			(*GetNumPlayersOnTeams) (); // Number of players (including bots) actively on a team (not observer)
 	int			(*GetTeam) (const edict_t *ent);
+	edict_t		*(*GetNextPlayerEnt) (edict_t *ent, qboolean ignore_bots);
 
 	// Block of unset data that will be zeroed out, in case of API changes, this will make new function pointers null,
 	// so crashes will be more obvious.
