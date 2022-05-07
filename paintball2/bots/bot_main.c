@@ -21,6 +21,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "bot_main.h"
 #include "bot_manager.h"
 #include "bot_goals.h"
+#include "bot_files.h"
+
 
 #ifdef WIN32
 #define EXPORT __declspec(dllexport)
@@ -36,6 +38,7 @@ cvar_t *skill = NULL;
 cvar_t *bot_debug = NULL;
 cvar_t *bots_vs_humans = NULL;
 cvar_t *bot_min_players = NULL;
+cvar_t *bot_min_bots = NULL;
 cvar_t *sv_gravity = NULL;
 #ifdef _DEBUG
 cvar_t *bot_remove_near_waypoints = NULL;
@@ -121,6 +124,7 @@ void BotInitLibrary (void)
 	bot_debug = bi.cvar("bot_debug", "0", 0);
 	bots_vs_humans = bi.cvar("bots_vs_humans", "0", 0);
 	bot_min_players = bi.cvar("bot_min_players", "0", 0);
+	bot_min_bots = bi.cvar("bot_min_bots", "0", 0);
 	sv_gravity = bi.cvar("sv_gravity", "800", 0);
 #ifdef _DEBUG
 	bot_remove_near_waypoints = bi.cvar("bot_remove_near_waypoints", "0", 0);
@@ -137,34 +141,35 @@ void BotShutdown (void)
 }
 
 
-int g_time_since_last_connection_check = 0;
+int g_time_to_next_connection_check_ms = 0;
 
 void BotUpdateConnections (int msec)
 {
-	// Every 5 seconds, check to see if we need to add a bot
-	g_time_since_last_connection_check += msec;
-	if (g_time_since_last_connection_check > 5000)
+	g_time_to_next_connection_check_ms -= msec;
+	if (g_time_to_next_connection_check_ms <= 0 && bots.level_time > 10.0) // wait a few seconds after the map changes so bots don't disconnect while players are loading and make teams unbalanced.
 	{
 		int num_players = bi.GetNumPlayersOnTeams();
 		int num_humans = num_players - bots.count;
 		int bots_needed = -1;
 
-		g_time_since_last_connection_check = 0;
+		g_time_to_next_connection_check_ms = 3000 + nu_rand(1000); // Every 3 - 4 seconds, check to see if we need to add a bot
 
+		// TODO: Force bots and humans to be on different teams.
 		if (bots_vs_humans->value > 0)
 		{
 			bots_needed = ceil(bots_vs_humans->value * num_humans);
 		}
 
+		// If players on the server is less than this, bots will fill in
 		if (bot_min_players->value > 0)
 		{
 			if (num_humans > 0)
 			{
-				bots_needed = bot_min_players->value - num_humans;
+				int fill_count = bot_min_players->value - num_humans;
 
-				if (bots_needed < 0)
+				if (fill_count > bots_needed)
 				{
-					bots_needed = 0;
+					bots_needed = fill_count;
 				}
 			}
 			else
@@ -173,8 +178,26 @@ void BotUpdateConnections (int msec)
 			}
 		}
 
+		// If players on server, guarantee there are at least this many bots
+		if (bot_min_bots->value > 0)
+		{
+			if (num_humans > 0)
+			{
+				if (bots_needed < bot_min_bots->value)
+				{
+					bots_needed = bot_min_bots->value;
+				}
+			}
+			else
+			{
+				bots_needed = 0;
+			}
+		}
+		
 		if (bots_needed >= 0)
 		{
+			int bot_diff;
+
 			if (bots.count > bots_needed)
 			{
 				int r = rand() % bots.count;
@@ -184,6 +207,13 @@ void BotUpdateConnections (int msec)
 			else if (bots.count < bots_needed)
 			{
 				AddBot(NULL);
+			}
+
+			bot_diff = abs(bots.count - bots_needed);
+
+			if (bot_diff > 1)
+			{
+				g_time_to_next_connection_check_ms /= bot_diff; // (dis)connect bots faster based on how many are needed.
 			}
 		}
 	}
@@ -228,6 +258,90 @@ static void SetBotUserInfo (char *userinfo, size_t size, const char *name)
 }
 
 
+qboolean NameUnused (const char *name)
+{
+	edict_t *ent = bi.GetNextPlayerEnt(NULL, false);
+
+	while (ent)
+	{
+		const char *other_name = bi.GetClientName(ent);
+
+		if (Q_strcaseeq(name, other_name))
+		{
+			return false;
+		}
+
+		ent = bi.GetNextPlayerEnt(ent, false);
+	}
+
+	return true;
+}
+
+qboolean GetBotNameFromFile (char *name_out, size_t size)
+{
+	int num_lines = 0;
+	char line[MAX_QPATH];
+	FILE *fp;
+
+	fp = FS_OpenFile("configs/botnames.txt", "rb");
+	
+	if (!fp)
+	{
+		fp = FS_OpenFile("configs/botnames_sample.txt", "rb");
+	}
+
+	if (fp)
+	{
+		qboolean first_pass = true;
+
+		if (num_lines <= 0)
+		{
+			num_lines = 0;
+			while(FS_ReadLine(fp, line, sizeof(line), true))
+			{
+				++num_lines;
+			}
+		}
+
+		fseek(fp, 0, 0);
+		rewind(fp);
+
+		if (num_lines > 0)
+		{
+			int random_line_index = (int)nu_rand(num_lines); // TODO: Check if a name is already used.
+			int line_index = 0;
+
+retry:
+			while (FS_ReadLine(fp, line, sizeof(line), true))
+			{
+				if (line_index >= random_line_index)
+				{
+					if (NameUnused(line))
+					{
+						Q_strncpyz(name_out, line, size);
+						fclose(fp);
+						return true;
+					}
+				}
+				++line_index;
+			}
+
+			// Went through the whole file from a random line looking for a name but failed.  Try once more from the start.
+			if (first_pass)
+			{
+				random_line_index = 0;
+				first_pass = false;
+				rewind(fp);
+				goto retry;
+			}
+		}
+
+		fclose(fp); // shouldn't ever get here, but just to be safe.
+	}
+
+	return false;
+}
+
 void AddBot (const char *name)
 {
 	char userinfo[MAX_INFO_STRING];
@@ -241,7 +355,10 @@ void AddBot (const char *name)
 
 	if (!name || !*name)
 	{
-		Com_sprintf(default_bot_name, sizeof(default_bot_name), "DPBot%02d", bots.count + 1);
+		if (!GetBotNameFromFile(default_bot_name, sizeof(default_bot_name)))
+		{
+			Com_sprintf(default_bot_name, sizeof(default_bot_name), "DPBot%02d", bots.count + 1);
+		}
 		name = default_bot_name;
 	}
 

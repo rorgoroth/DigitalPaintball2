@@ -19,6 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "bot_main.h"
+#include "bot_files.h"
 
 /*
 ============
@@ -46,5 +47,87 @@ void FS_CreatePath (char *path)
 #endif
 			*ofs = '/';
 		}
+	}
+}
+
+
+FILE *FS_OpenFile (const char *filename, const char *mode)
+{
+	const char *gamedir = BASEDIRNAME;
+	cvar_t *game = bi.cvar("game", gamedir, 0);
+	char filename_full[MAX_QPATH];
+
+	Q_snprintfz(filename_full, sizeof(filename_full), "%s/%s", gamedir, filename);
+	return fopen(filename_full, mode);
+}
+
+
+qboolean FS_ReadLine (FILE *fp, char *line, size_t size, qboolean ignore_comments)
+{
+	int col = 0; // column
+	qboolean is_comment = false;
+
+	if (fp)
+	{
+		int c = fgetc(fp);
+
+		while (c != EOF)
+		{
+			if (c != '\r')
+			{
+				if (col < size)
+				{
+					if (c == '/' && ignore_comments)
+					{
+						int nextc = getc(fp);
+						if (nextc == '/')
+						{
+							is_comment = true;
+						}
+						else
+						{
+							ungetc(nextc, fp);
+						}
+					}
+
+					if (!is_comment)
+					{
+						line[col] = c;
+						++col;
+					}
+				}
+			}
+
+			c = fgetc(fp);
+
+			// Break out of the loop on newline, unless the whole line was a comment, in which case we read another character to move to the next line.
+			if (c == '\n')
+			{
+				if (is_comment && col <= 0)
+				{
+					c = fgetc(fp);
+					is_comment = false;
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+
+		if (EOF)
+		{
+			if (col == 0)
+			{
+				return false;
+			}
+		}
+
+		line[col] = 0; // null terminate
+		return true;
+	}
+	else
+	{
+		return false;
 	}
 }

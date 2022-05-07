@@ -183,7 +183,7 @@ qboolean BotHasLineOfSightToEnt (int bot_index, const edict_t *target)
 void BotAimAndShoot (int botindex, int msec)
 {
 	botmovedata_t *movement = bots.movement + botindex;
-	edict_t *target = bi.GetNextPlayerEnt(NULL, false);
+	edict_t *target = bi.GetNextLivePlayerEnt(NULL, false);
 	edict_t *self = bots.ents[botindex];
 	edict_t *best_target = NULL;
 	float best_dist_sq = 4096.0f * 4096.0f;
@@ -226,7 +226,7 @@ void BotAimAndShoot (int botindex, int msec)
 			}
 		}
 
-		target = bi.GetNextPlayerEnt(target, false);
+		target = bi.GetNextLivePlayerEnt(target, false);
 	}
 	
 	// By default, don't shoot.

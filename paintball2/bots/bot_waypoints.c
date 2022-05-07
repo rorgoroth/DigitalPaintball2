@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -134,7 +134,7 @@ int WaypointDistCompareFunc (const void *data1, const void *data2)
 }
 
 
-// Compute and sort the square distances from all waypoints to this one
+// Compute and sort the 2D square distances from all waypoints to this one
 void WaypointSortSquareDistances (int waypoint_index)
 {
 	// potential opt: we could hash positions to avoid going through every single waypoint.
@@ -144,6 +144,7 @@ void WaypointSortSquareDistances (int waypoint_index)
 	for (i = 0; i < g_bot_waypoints.num_points; ++i)
 	{
 		VectorSubtract(g_bot_waypoints.positions[i], g_bot_waypoints.positions[waypoint_index], diff_vec);
+		diff_vec[2] = 0; // ignore vertical component, as there could be a long drop down (ex: madness.bsp spawns)
 		g_bot_waypoints.temp_dists_sq[i] = VectorLengthSquared(diff_vec);
 		g_bot_waypoints.temp_sorted_indexes[i] = i;
 	}
@@ -195,6 +196,20 @@ qboolean BotCanReachPosition (const edict_t *ent, const vec3_t pos1, const vec3_
 		VectorCopy(trace.endpos, jump_pos);
 		trace = bi.trace(jump_pos, crouching_mins, crouching_maxs, pos2, ent, MASK_PLAYERSOLID);
 		++g_debug_trace_count;
+
+		// If we hit something, maybe we need to clear something or drop back down over an edge, so try a half-way point horizontally at jump height
+		if (trace.fraction != 1.0f)
+		{
+			vec3_t jump_midway_pos;
+
+			VectorAdd(jump_pos, pos2, jump_midway_pos);
+			VectorScale(jump_midway_pos, 0.5, jump_midway_pos);
+			jump_midway_pos[2] = jump_pos[2];
+			trace = bi.trace(jump_pos, crouching_mins, crouching_maxs, jump_midway_pos, ent, MASK_PLAYERSOLID);
+			++g_debug_trace_count;
+			trace = bi.trace(trace.endpos, crouching_mins, crouching_maxs, pos2, ent, MASK_PLAYERSOLID);
+			++g_debug_trace_count;
+		}
 
 		if (!trace.startsolid && trace.fraction == 1.0f)
 		{
@@ -624,13 +639,13 @@ void BotTryAddWaypoint (const edict_t *ent, const vec3_t pos, waypoint_type_t wa
 	}
 }
 
-// TODO: Trace check, as the closest waypoint may be behind a wall.
-int ClosestWaypointToPosition (const vec3_t pos, float *sq_dist)
+int ClosestWaypointToPosition (const edict_t *ent, const vec3_t pos)
 {
 	int i;
 	float best_dist = FLT_MAX;
 	float dist;
 	int best_node = -1;
+	int second_best = -1;
 
 	for (i = 0; i < g_bot_waypoints.num_points; ++i)
 	{
@@ -638,15 +653,25 @@ int ClosestWaypointToPosition (const vec3_t pos, float *sq_dist)
 
 		if (dist < best_dist)
 		{
+			second_best = best_node;
 			best_dist = dist;
 			best_node = i;
 		}
 	}
 
-	if (sq_dist)
-		*sq_dist = best_dist;
+	if (best_node >= 0)
+	{
+		if (BotCanReachPosition(ent, g_bot_waypoints.positions[best_node], pos, NULL))
+		{
+			return best_node;
+		}
+		else if (second_best >= 0 && BotCanReachPosition(ent, g_bot_waypoints.positions[second_best], pos, NULL))
+		{
+			return second_best;
+		}
+	}
 
-	return best_node;
+	return -1;
 }
 
 

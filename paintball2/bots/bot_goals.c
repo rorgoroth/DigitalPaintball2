@@ -298,7 +298,7 @@ void BotUpdateGoals (int msec)
 						bot_objective_t *objective = g_bot_objectives + i;
 						
 						objective->weight = 0.0;
-
+						
 						if (objective->active)
 						{
 							qboolean same_team = (bi.GetTeam(objective->ent) == bot_team);
@@ -316,7 +316,7 @@ void BotUpdateGoals (int msec)
 									objective->weight = 1.0; // todo: Divide by distance?
 								}
 							}
-
+							
 							total_objective_weights += objective->weight;
 						}
 					}
@@ -347,6 +347,7 @@ void BotUpdateGoals (int msec)
 										goal->changed = true;
 										goal->timeleft_msec = 10000 + (int)nu_rand(60000.0f); // 10-70 seconds.
 										VectorCopy(objective->ent->s.origin, goal->pos);
+										goal->pos[2] += objective->ent->mins[2] - bot_ent->mins[2] + 1.0; // flag mins aren't as low as player mins, so we need to make sure this is reachable, otherwise traces will fail.
 									}
 								}
 								else if (objective->objective_type == BOT_OBJECTIVE_TYPE_BASE)
@@ -409,7 +410,7 @@ void BotUpdateGoals (int msec)
 //						for (i = 0; i < MAX_BOT_OBJECTIVES && active_objective_index <= random_objective_index; ++i)
 //						{
 //							bot_objective_t *objective = g_bot_objectives + i;
-//
+//						
 //							if (objective->active)
 //							{
 //								if (active_objective_index == random_objective_index)
@@ -444,7 +445,7 @@ void BotUpdateGoals (int msec)
 //											{
 //												float min = objective->ent->mins[axis];
 //												float max = objective->ent->maxs[axis];
-//
+//									
 //												goal->pos[axis] += min + nu_rand(max - min) * 0.5; // only do 50% of the trigger volume to avoid having targets on sloped walls.
 //												// Center of triggers is not at the entity origin, which is usually 0, 0, 0, but instead at the average of mins + maxs
 //												target_center[axis] = objective->ent->s.origin[axis] + (objective->ent->mins[axis] + objective->ent->maxs[axis]) * 0.5;

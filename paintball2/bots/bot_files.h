@@ -18,5 +18,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-void FS_CreatePath (char *path);
+#define BASEDIRNAME "pball"
 
+void FS_CreatePath (char *path);
+FILE *FS_OpenFile (const char *filename, const char *mode);
+qboolean FS_ReadLine (FILE *fp, char *line, size_t size, qboolean ignore_comments);
