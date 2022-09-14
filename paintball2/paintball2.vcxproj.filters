@@ -28,6 +28,9 @@
     <Filter Include="a3d">
       <UniqueIdentifier>{7b2f6ff6-5b81-497e-bdd9-2d39d59168d9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Client\discord">
+      <UniqueIdentifier>{b96bc8c9-eed0-4223-aad0-686e3563c273}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="win32\cd_win.c">
@@ -219,6 +222,9 @@
     <ClCompile Include="client\cl_irc.c">
       <Filter>Source Files\Client</Filter>
     </ClCompile>
+    <ClCompile Include="client\discord\pb2_discord.c">
+      <Filter>Source Files\Client\discord</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="xfire\xfiregameclient.h">
@@ -313,6 +319,9 @@
     </ClInclude>
     <ClInclude Include="a3d\q2a3d.h">
       <Filter>a3d</Filter>
+    </ClInclude>
+    <ClInclude Include="client\discord\discord_game_sdk.h">
+      <Filter>Source Files\Client\discord</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

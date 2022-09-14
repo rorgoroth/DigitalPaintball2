@@ -147,7 +147,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;XFIRE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;DISCORD;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -191,7 +191,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;XFIRE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;DISCORD;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>
@@ -362,7 +362,7 @@
     <Link>
       <AdditionalOptions>/MACHINE:I386 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>winmm.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>c:\games\quake2\pbq2.exe</OutputFile>
+      <OutputFile>e:\games\quake2\pbq2.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ProgramDatabaseFile>..\release/exe/paintball2.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
@@ -419,6 +419,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="client\cl_irc.c" />
+    <ClCompile Include="client\discord\pb2_discord.c" />
     <ClCompile Include="win32\cd_win.c" />
     <ClCompile Include="qcommon\cmd.c" />
     <ClCompile Include="qcommon\cmodel.c" />
@@ -483,6 +484,7 @@
     <ClCompile Include="a3d\q2a3d.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="client\discord\discord_game_sdk.h" />
     <ClInclude Include="xfire\xfiregameclient.h" />
     <ClInclude Include="client\anorms.h" />
     <ClInclude Include="qcommon\bspfile.h" />

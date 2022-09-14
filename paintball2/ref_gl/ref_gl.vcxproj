@@ -359,7 +359,7 @@
     <Link>
       <AdditionalOptions>/MACHINE:I386 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>winmm.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>c:\games\quake2\ref_pbgl.dll</OutputFile>
+      <OutputFile>e:\games\quake2\ref_pbgl.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ModuleDefinitionFile>.\ref_gl.def</ModuleDefinitionFile>
       <ProgramDatabaseFile>..\..\release/ref_gl/ref_pbgl.pdb</ProgramDatabaseFile>

@@ -8,4 +8,11 @@
     <LocalDebuggerCommand>..\paintball2.exe</LocalDebuggerCommand>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PB2Q2 - Release|Win32'">
+    <LocalDebuggerCommand>e:\games\quake2\pbq2</LocalDebuggerCommand>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PB2Q2 - Release|Win32'">
+    <LocalDebuggerWorkingDirectory>e:\games\quake2</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
 </Project>

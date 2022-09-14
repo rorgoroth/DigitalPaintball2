@@ -802,8 +802,13 @@ extern int cl_maplist_modes_count;
 
 
 // pb2_xfire.c -- jitxfire
+#ifdef XFIRE
 void CL_Xfire (void);
+#endif
 
+#ifdef DISCORD
+void CL_Discord (void);
+#endif
 
 // snd_ogg.c
 #ifdef OGG_SUPPORT
