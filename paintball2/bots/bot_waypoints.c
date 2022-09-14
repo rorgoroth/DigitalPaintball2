@@ -167,7 +167,7 @@ qboolean BotCanReachPosition (const edict_t *ent, const vec3_t pos1, const vec3_
 	qboolean hit_something = false;
 	qboolean local_need_jump = false;
 
-	trace = bi.trace(pos1, crouching_mins, crouching_maxs, pos2, ent, MASK_PLAYERSOLID);
+	trace = bi.trace(pos1, standing_mins, standing_maxs, pos2, ent, MASK_PLAYERSOLID);
 	++g_debug_trace_count;
 
 	if (trace.fraction < 1.0f || trace.startsolid)
@@ -189,12 +189,10 @@ qboolean BotCanReachPosition (const edict_t *ent, const vec3_t pos1, const vec3_
 
 		VectorCopyAddZ(pos1, jump_pos, 56.0f);
 
-		// Just use crouching mins/maxes here to avoid doing more traces later.  It's possible that we'll generate an impossible node connection
-		// (one that requires jumping while crouched), but those seem rare enough to not waste the extra cycles, since traces/raycast are slow.
-		trace = bi.trace(pos1, crouching_mins, crouching_maxs, jump_pos, ent, MASK_PLAYERSOLID);
+		trace = bi.trace(pos1, standing_mins, standing_maxs, jump_pos, ent, MASK_PLAYERSOLID);
 		++g_debug_trace_count;
 		VectorCopy(trace.endpos, jump_pos);
-		trace = bi.trace(jump_pos, crouching_mins, crouching_maxs, pos2, ent, MASK_PLAYERSOLID);
+		trace = bi.trace(jump_pos, standing_mins, standing_maxs, pos2, ent, MASK_PLAYERSOLID);
 		++g_debug_trace_count;
 
 		// If we hit something, maybe we need to clear something or drop back down over an edge, so try a half-way point horizontally at jump height
@@ -215,6 +213,11 @@ qboolean BotCanReachPosition (const edict_t *ent, const vec3_t pos1, const vec3_
 		{
 			hit_something = false;
 			// todo: node types (ladder, crouch, jump, etc)?
+		}
+
+		if (hit_something)
+		{
+			// todo: crouch check
 		}
 
 		local_need_jump = true;
@@ -857,22 +860,26 @@ void BotReadWaypoints (const char *mapname)
 // Called every frame so we can load waypoint files over time
 void BotUpdateWaypoints (void)
 {
-	if (g_waypoint_fp)
+	int i;
+	for (i = 0; i < 4; ++i)
 	{
-		vec3short_t pos_short;
-		vec3_t pos;
+		if (g_waypoint_fp)
+		{
+			vec3short_t pos_short;
+			vec3_t pos;
 
-		if (g_file_waypoint_index < g_num_waypoints_in_file)
-		{
-			fread(pos_short, sizeof(pos_short), 1, g_waypoint_fp);
-			Short3ToVec3(pos_short, pos);
-			BotTryAddWaypoint(NULL, pos, WP_TYPE_GROUND); // TODO: Read and write waypoint types.
-			++g_file_waypoint_index;
-		}
-		else
-		{
-			fclose(g_waypoint_fp);
-			g_waypoint_fp = NULL;
+			if (g_file_waypoint_index < g_num_waypoints_in_file)
+			{
+				fread(pos_short, sizeof(pos_short), 1, g_waypoint_fp);
+				Short3ToVec3(pos_short, pos);
+				BotTryAddWaypoint(NULL, pos, WP_TYPE_GROUND); // TODO: Read and write waypoint types.
+				++g_file_waypoint_index;
+			}
+			else
+			{
+				fclose(g_waypoint_fp);
+				g_waypoint_fp = NULL;
+			}
 		}
 	}
 }

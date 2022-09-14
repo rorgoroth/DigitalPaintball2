@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "bot_debug.h"
 
 
-#define PLAYER_OBSERVE_MIN_MOVE_SPEED 280 // start recording players moving this fast
+#define PLAYER_OBSERVE_MIN_MOVE_SPEED 3 // start recording players moving this fast
 
 #define PLAYER_PATH_MIN_DIST 250 // quake units.  to cut back on short paths from strafing back and forth.
 
@@ -41,7 +41,25 @@ player_recorded_paths_t		g_player_paths;
 usercmd_t g_lastplayercmd; // used for BotCopyPlayer
 usercmd_t g_playercmd; // used for BotCopyPlayer
 
-// TODO: discard small paths
+
+void BotInitObservations (const char *mapname)
+{
+	int i;
+
+	// Clear out any loaded paths
+	if (g_player_paths.paths)
+	{
+		/* Paths cleared out because they're allocated with TAG_LEVEL?
+		for (i = 0; i < g_player_paths.num_paths; ++i)
+		{
+			g_player_paths.paths[i]
+		}*/
+	}
+
+	g_player_paths.num_paths = 0;
+// todo: load/save paths on map change.
+}
+
 
 void BotAddPlayerObservation (player_observation_t *observation)
 {
@@ -56,7 +74,8 @@ void BotAddPlayerObservation (player_observation_t *observation)
 
 	if (VectorSquareDistance(observation->start_pos, observation->end_pos) < PLAYER_PATH_MIN_DIST * PLAYER_PATH_MIN_DIST)
 	{
-		bi.dprintf("Path too short.  Discarded.\n");
+		if (bot_debug->value)
+			bi.dprintf("Path too short.  Discarded.\n");
 		return;
 	}
 
@@ -71,29 +90,36 @@ void BotAddPlayerObservation (player_observation_t *observation)
 			// todo: Compression (only record points where input has changed)
 			input_data[i] = observation->input_data[i];
 			total_msec += observation->input_data[i].msec;
+			// TODO: Probably need to store positions every 0.5s or so so we can identify if the bot went off course (ex: collided with another player or didn't start at the correct location)
 		}
-		
+
 		VectorCopy(observation->start_pos, recorded_path->start_pos);
 		VectorCopy(observation->end_pos, recorded_path->end_pos);
 		recorded_path->time = total_msec / 1000.0f;
 		recorded_path->input_data = input_data;
 		recorded_path->total_points = total_points;
-		bi.dprintf("Path %d added.\n", path_index);
+		if (bot_debug->value)
+		{
+			bi.dprintf("Path %d added.\n", path_index);
+		}
 		++g_player_paths.num_paths;
-		//ri.DrawDebugLine(observation->start_pos, observation->end_pos, 1.0, .8, .1, 20.0f, -1);
-		//DrawDebugSphere(observation->end_pos, 8.0f, 1.0f, 0.f, 0.5f, 20.0f, -1);
+
+		if (bot_debug->value)
+		{
+			DrawDebugLine(observation->start_pos, observation->end_pos, 1.0, .8, .1, 20.0f, -1);
+			//DrawDebugSphere(observation->end_pos, 8.0f, 1.0f, 0.f, 0.5f, 20.0f, -1);
+		}
 	}
 	else
 	{
-		bi.dprintf("Paths full.\n");
+		// TODO: Randomly pick one to overwrite?
+		if (bot_debug->value)
+			bi.dprintf("Paths full.\n");
 	}
 
-	// todo: when full, either increase capacity or start replacing similar paths, or randomly replace paths
+	// todo: when full, either increase capacity or start replacing similar paths, or randomly replace paths.  Make sure path is not in use first.  Also try to keep a similar number of paths for each team.
 }
 
-// todo: load/save paths on map change.
-
-// todo: clear everything on map change.
 
 float XYPMVelocitySquared (const short *vel)
 {
@@ -145,7 +171,11 @@ void BotConvertPmoveToObservationPoint (player_input_data_t *input_data, const e
 
 void BotCompleteObservationPath (const edict_t *ent, player_observation_t *observation)
 {
-	bi.dprintf("Stopping path\n");
+	if (bot_debug->value)
+	{
+		bi.dprintf("Stopping path\n");
+	}
+
 	VectorCopy(ent->s.origin, observation->end_pos);
 	BotAddPlayerObservation(observation);
 	observation->path_active = false;
@@ -163,12 +193,18 @@ void BotAddObservationPoint (player_observation_t *observation, const edict_t *e
 		}
 		else
 		{
-			bi.dprintf("Observed msec == 0.\n"); // breakpoint
+			if (bot_debug->value)
+			{
+				bi.dprintf("Observed msec == 0.\n"); // breakpoint
+			}
 		}
 	}
 	else
 	{
-		bi.dprintf("Path length exceeded.\n");
+		if  (bot_debug->value)
+		{
+			bi.dprintf("Path length exceeded.\n");
+		}
 		//BotCompleteObservationPath(observation);
 	}
 }
@@ -176,7 +212,7 @@ void BotAddObservationPoint (player_observation_t *observation, const edict_t *e
 
 void BotAddPotentialWaypointFromPmove(player_observation_t *observation, const edict_t *ent, const pmove_t *pm);
 
-// Called for each player input packet sent, while the player is alive
+// Called for each player input packet sent after pmove is calculated, while the player is alive
 void BotObservePlayerInput (unsigned int player_index, const edict_t *ent, const pmove_t *pm)
 {
 	if (bots.count < 1)
@@ -194,7 +230,7 @@ void BotObservePlayerInput (unsigned int player_index, const edict_t *ent, const
 
 		BotAddPotentialWaypointFromPmove(observation, ent, pm);
 
-#if 0 //  -- TODO: Figure out a better way for bots to follow player paths
+#if 1 //  -- TODO: Figure out a better way for bots to follow player paths
 		if (!observation->path_active)
 		{
 			float xy_velocity_sq = XYPMVelocitySquared(pm->s.velocity);
@@ -202,7 +238,10 @@ void BotObservePlayerInput (unsigned int player_index, const edict_t *ent, const
 			// todo: start on jump as well
 			if (xy_velocity_sq > PLAYER_OBSERVE_MIN_MOVE_SPEED * PLAYER_OBSERVE_MIN_MOVE_SPEED && bi.IsGroundEntityWorld(pm->groundentity))
 			{
-				bi.dprintf("Starting path\n");
+				if (bot_debug->value)
+				{
+					bi.dprintf("Starting path\n");
+				}
 				VectorCopy(ent->s.origin, observation->start_pos);
 				observation->path_active = true;
 				observation->current_index = 0;

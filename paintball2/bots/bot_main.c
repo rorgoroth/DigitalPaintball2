@@ -49,6 +49,7 @@ void BotInitAim (void);
 void UpdatePlayerPosHistory(int msec);
 void RemoveBot (edict_t *ent);
 void BotUpdateWaypoints (void);
+void BotInitObservations (const char *mapname);
 
 
 void BotInitMap (const char *mapname, int game_mode)
@@ -60,6 +61,7 @@ void BotInitMap (const char *mapname, int game_mode)
 	memset(bots.movement, 0, sizeof(bots.movement));
 	memset(bots.goals, 0, sizeof(bots.goals));
 	BotReadWaypoints(mapname);
+	BotInitObservations(mapname);
 	Q_strncpyz(bots.levelname, mapname, sizeof(bots.levelname));
 	bots.game_mode = game_mode;
 	bots.defending_team = 1; // default siege team to start for warmup.

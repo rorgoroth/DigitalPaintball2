@@ -30,11 +30,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define MAX_BOTS 64
 
+
+// For following observed player paths
 typedef struct botfollowpath_s {
-	qboolean		on_path; // Are we actively following a path?
+	qboolean		on_path; // Are we actively following a waypoint path?
+	qboolean		started;
 	int				path_index; // Which path are we following?
 	int				index_in_path; // Where are we along that path?
+	int				msec_to_reach_start; // time we've been trying to reach the start point (so we can have a timeout failure)
 } botfollowpath_t;
+
 
 typedef struct botmovedata_s {
 	int					timeleft; // time left for ucmd's.
@@ -55,7 +60,7 @@ typedef struct botmovedata_s {
 	short				time_til_try_path; // used for wandering
 	float				last_yaw;
 	float				last_pitch;
-	botfollowpath_t		path_info;
+	botfollowpath_t		path_info; // for following observed player paths
 	bot_waypoint_path_t	waypoint_path;
 	qboolean			stop; // defend/camp/whatever
 	qboolean			need_jump; // need to jump next time we're on the ground.
@@ -63,12 +68,14 @@ typedef struct botmovedata_s {
 
 
 typedef struct botmanager_s {
+	// Note: Anything with a bot index needs to be updated in BotHandleDisconnect()
 	edict_t				*ents[MAX_BOTS];
 	botmovedata_t		movement[MAX_BOTS];
 	botgoal_t			goals[MAX_BOTS];
 	int					goal_debug_spheres[MAX_BOTS];
-	int					count; // total number of bots currently in the map
 	char				names_to_readd[MAX_BOTS][64]; // bots to re-add after map change
+
+	int					count; // total number of bots currently in the map
 	int					num_to_readd; // number of bots to re-add
 	float				level_time;
 	float				last_waypoint_add_time;

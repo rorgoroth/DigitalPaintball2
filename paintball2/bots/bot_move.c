@@ -25,6 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "bot_debug.h"
 
 
+
 #define MOVE_SPEED 400 // 400 is the running speed in Quake2
 #define BOT_UCMD_TIME 25 // 25ms is 40fps.  Should be enough for trick jumps
 
@@ -498,43 +499,117 @@ qboolean BotMoveTowardPlayerPath (unsigned int botindex, int msec)
 {
 	botmovedata_t *movement = bots.movement + botindex;
 	edict_t *ent = bots.ents[botindex];
-	int pathindex;
-	float bestdistsq = MAX_DIST_TO_PLAYER_PATH * MAX_DIST_TO_PLAYER_PATH;
-	int bestpathindex = -1;
 	//short yawangle_short = ANGLE2SHORT(ent->s.angles[YAW
 
-	for (pathindex = 0; pathindex < g_player_paths.num_paths; ++pathindex)
+	if (movement->path_info.on_path)
 	{
-		float distsq = VectorSquareDistance(ent->s.origin, g_player_paths.paths[pathindex].start_pos);
-
-		if (distsq < bestdistsq)
+		if (!movement->path_info.started) // Moving toward path
 		{
-			// TODO: Prefer path facing same angle... ent->s.angles[YAW]
-			// TODO: check line of sight/clear walking path
-			// TODO: add some randomization (and ultimately proper path finding)
-			bestpathindex = pathindex;
-			bestdistsq = distsq;
+			float yaw = movement->last_yaw;
+			float pitch = movement->last_pitch;
+			usercmd_t cmd;
+			int path_index = movement->path_info.path_index;
+			float distsq_before = VectorSquareDistance(ent->s.origin, g_player_paths.paths[path_index].start_pos);
+			float distsq_after;
+
+			movement->timeleft += msec;
+			g_player_paths.paths[path_index].start_pos;
+			yaw = SHORT2ANGLE(g_player_paths.paths[path_index].input_data[0].angle); // Just aim the direction of the first point instantly for now -- maybe smooth later
+			memset(&cmd, 0, sizeof(cmd));
+			movement->path_info.msec_to_reach_start += msec;
+
+			while (movement->timeleft > 0)
+			{
+				vec3_t forward, right, vec_diff;
+				float forward_dot, right_dot;
+
+				VectorSubtract(g_player_paths.paths[path_index].start_pos, ent->s.origin, vec_diff);
+				movement->timeleft -= BOT_UCMD_TIME;
+				//yaw += movement->yawspeed * ucmd_dt;
+				//pitch += movement->pitchspeed * ucmd_dt;
+
+				AngleVectors(ent->s.angles, forward, right, NULL);
+				forward_dot = DotProduct2(forward, vec_diff);
+				right_dot = DotProduct2(right, vec_diff);
+
+				if (forward_dot > 0.0)
+					movement->forward = MOVE_SPEED;
+				else
+					movement->forward = -MOVE_SPEED;
+
+				if (right_dot > 0.0)
+					movement->side = MOVE_SPEED;
+				else
+					movement->side = -MOVE_SPEED;
+
+				cmd.angles[YAW] = ANGLE2SHORT(yaw) - ent->client->ps.pmove.delta_angles[YAW];
+				cmd.angles[PITCH] = ANGLE2SHORT(pitch) - ent->client->ps.pmove.delta_angles[PITCH];
+				cmd.msec = BOT_UCMD_TIME;
+				cmd.forwardmove = movement->forward;
+				cmd.sidemove = movement->side;
+				cmd.upmove = movement->up;
+				cmd.buttons = movement->shooting ? 1 : 0;
+				bi.ClientThink(ent, &cmd);
+			}
+
+			movement->last_yaw = yaw;
+			movement->last_pitch = pitch;
+
+			distsq_after = VectorSquareDistance(ent->s.origin, g_player_paths.paths[path_index].start_pos);
+
+			if (distsq_after < 64.00) // 8 units
+			{
+				movement->path_info.started = true; // start following the player input
+				// TODO: This isn't close enough -- need to get more exact and have the velocity better match the start velocity.  Bots miss jumps and stuff currently with this
+			}
+			else if (movement->path_info.msec_to_reach_start > 2000) // couldn't reach start point after 2s -- probably stuck or something.  Give up.
+			{
+				movement->path_info.on_path = false;
+				return false;
+			}
 		}
-	}
-
-	if (bestpathindex >= 0)
-	{
-		vec3_t vecToPathStart;
-
-		VectorSubtract(g_player_paths.paths[bestpathindex].start_pos, ent->s.origin, vecToPathStart);
-		// todo, orient and move toward path
-
-		// todo: if within epsilon of path start...
-		//bi.dprintf("Bot picked path %d.\n", bestpathindex);
-		movement->path_info.on_path = true;
-		movement->path_info.path_index = bestpathindex;
-		movement->path_info.index_in_path = 0;
 		return true;
 	}
-	else
+	else // not on path
 	{
-		// Found no path, bot will wander aimlessly. 
-		return false;
+		int pathindex;
+		float bestdistsq = MAX_DIST_TO_PLAYER_PATH * MAX_DIST_TO_PLAYER_PATH;
+		int bestpathindex = -1;
+
+		for (pathindex = 0; pathindex < g_player_paths.num_paths; ++pathindex)
+		{
+			float distsq = VectorSquareDistance(ent->s.origin, g_player_paths.paths[pathindex].start_pos);
+
+			if (distsq + nu_rand(64.0) < bestdistsq + nu_rand(64.0))
+			{
+				// TODO: Prefer path facing same angle... ent->s.angles[YAW]
+				// TODO: check line of sight/clear walking path
+				bestpathindex = pathindex;
+				bestdistsq = distsq;
+			}
+		}
+
+		if (bestpathindex >= 0)
+		{
+			vec3_t vecToPathStart;
+
+			VectorSubtract(g_player_paths.paths[bestpathindex].start_pos, ent->s.origin, vecToPathStart);
+			// todo, orient and move toward path
+
+			// todo: if within epsilon of path start...
+			//bi.dprintf("Bot picked path %d.\n", bestpathindex);
+			movement->path_info.on_path = true;
+			movement->path_info.msec_to_reach_start = 0;
+			movement->path_info.path_index = bestpathindex;
+			movement->path_info.index_in_path = 0;
+			movement->path_info.started = false; // didn't start moving, yet.
+			return true;
+		}
+		else
+		{
+			// Found no path, bot will wander aimlessly.
+			return false;
+		}
 	}
 }
 
@@ -544,23 +619,13 @@ qboolean BotFollowPlayerPaths (unsigned int botindex, int msec)
 	botmovedata_t *movement = bots.movement + botindex;
 	edict_t *ent = bots.ents[botindex];
 
-	if (!movement->path_info.on_path && g_player_paths.num_paths > 0)
+	if ((!movement->path_info.on_path || !movement->path_info.started))
 	{
 		if (!BotMoveTowardPlayerPath(botindex, msec))
 			return false;
-
-		/*
-		// Find a path (just pick one randomly for now)
-		int path_index = (int)nu_rand(g_player_paths.num_paths);
-
-		bi.dprintf("Bot picked path %d.\n", path_index);
-		movement->path_info.on_path = true;
-		movement->path_info.path_index = path_index;
-		movement->path_info.index_in_path = 0;
-		*/
 	}
 
-	if (movement->path_info.on_path)
+	if (movement->path_info.on_path && movement->path_info.started)
 	{
 		int index = movement->path_info.index_in_path;
 		player_recorded_path_t *path = g_player_paths.paths + movement->path_info.path_index;
@@ -602,11 +667,6 @@ qboolean BotFollowPlayerPaths (unsigned int botindex, int msec)
 
 		return true;
 	}
-	else
-	{
-		// TODO: navigate toward paths
-		return false;
-	}
 }
 
 
@@ -632,8 +692,7 @@ void BotMove (unsigned int botindex, int msec)
 				move = false;
 			}
 
-			/**
-			if (move && BotFollowPlayerPaths(botindex, msec))
+			/*if (move && BotFollowPlayerPaths(botindex, msec)) // TODO: Testing
 			{
 			}
 			else*/

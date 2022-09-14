@@ -355,6 +355,13 @@ void BotUpdateGoals (int msec)
 									trace_t trace;
 									vec3_t target_center;
 									int axis;
+									vec3_t temp_mins, temp_maxs;
+
+									// Base might be in some kind of tight location, like under a platform, so make a really small mins/maxs to check for the ground position
+									VectorCopy(bot_ent->mins, temp_mins);
+									VectorCopy(bot_ent->maxs, temp_maxs);
+									temp_mins[2] = 0;
+									temp_maxs[2] = 12;
 
 									goal->active = true;
 									goal->type = BOT_GOAL_REACH_POSITION;
@@ -373,7 +380,24 @@ void BotUpdateGoals (int msec)
 										target_center[axis] = objective->ent->s.origin[axis] + (objective->ent->mins[axis] + objective->ent->maxs[axis]) * 0.5;
 									}
 
-									trace = bi.trace(target_center, bot_ent->mins, bot_ent->maxs, goal->pos, bot_ent, MASK_PLAYERSOLID);
+									// Sometimes the base triggers go beyond the playable space, so cast from the center out.
+									trace = bi.trace(target_center, temp_mins, temp_maxs, goal->pos, bot_ent, MASK_PLAYERSOLID);
+
+									// Sometimes the base is centered in solid ground (ex: pbcup.bsp) or is right on the ground (routez.bsp), so we need to move up a bit
+									if (trace.startsolid)
+									{
+										target_center[2] += 32.0;
+										trace = bi.trace(target_center, temp_mins, temp_maxs, goal->pos, bot_ent, MASK_PLAYERSOLID);
+
+										if (trace.startsolid)
+										{
+											target_center[2] += 32.0; // move up even more
+											trace = bi.trace(target_center, temp_mins, temp_maxs, goal->pos, bot_ent, MASK_PLAYERSOLID);
+										}
+									}
+
+									// Set our end pos to what it would have been if we used the larger trace bounds.
+									trace.endpos[2] += temp_mins[2] - bot_ent->mins[2];
 
 									{
 										vec3_t down_pos;

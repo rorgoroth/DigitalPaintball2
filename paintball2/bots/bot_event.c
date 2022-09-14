@@ -35,6 +35,9 @@ static void BotHandleDisconnect (const edict_t *ent)
 		if (removed)
 		{
 			bots.ents[i - 1] = bots.ents[i];
+			bots.movement[i - 1] = bots.movement[i];
+			bots.goals[i - 1] = bots.goals[i];
+			bots.goal_debug_spheres[i - 1] = bots.goal_debug_spheres[i];;
 		}
 		else if (bots.ents[i] == ent)
 		{
@@ -69,6 +72,8 @@ void BotHandleRoundStart (void)
 	// Bots don't have a flag when the round starts.
 	for (bot_index = 0; bot_index < bots.count; ++bot_index)
 	{
+		bots.movement[bot_index].last_target_msec = 99999; // Clear out the target so bots don't wander around facing backward on new rounds (hopefully)
+		bots.movement[bot_index].aim_target = NULL;
 		bots.goals[bot_index].has_flag = false;
 	}
 }
