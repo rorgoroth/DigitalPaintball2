@@ -1541,7 +1541,11 @@ void Qcommon_Init (int argc, char **argv)
 #else
 	dedicated = Cvar_Get("dedicated", "0", CVAR_NOSET);
 #endif
+#ifdef QUAKE2
+	deathmatch = Cvar_Get("deathmatch", "0", 0);
+#else // paintball 2
 	deathmatch = Cvar_Get("deathmatch", "1", 0); // jit
+#endif
 
 	timestamp_console = Cvar_Get("timestamp_console", dedicated->value ? "1" : "0", 0); // jittimestamp
 	timestamp_date = Cvar_Get("timestamp_date", "0", 0); // xrichardx: put date in front of time, non default

@@ -53,7 +53,8 @@ typedef struct
 } beam_t;
 
 beam_t		cl_beams[MAX_BEAMS];
-
+//PMM - added this for player-linked beams.  Currently only used by the plasma beam
+beam_t		cl_playerbeams[MAX_BEAMS];
 
 #define	MAX_LASERS	32
 typedef struct
@@ -157,7 +158,29 @@ CL_RegisterTEntSounds
 void CL_RegisterTEntSounds (void) // jit, cleaned up and adjusted for paintball
 {
 #ifdef QUAKE2
-#else
+	// PMM - version stuff
+//	Com_Printf ("%s\n", ROGUE_VERSION_STRING);
+	// PMM
+	cl_sfx_ric1 = S_RegisterSound ("world/ric1.wav");
+	cl_sfx_ric2 = S_RegisterSound ("world/ric2.wav");
+	cl_sfx_ric3 = S_RegisterSound ("world/ric3.wav");
+	cl_sfx_lashit = S_RegisterSound("weapons/lashit.wav");
+	cl_sfx_spark5 = S_RegisterSound ("world/spark5.wav");
+	cl_sfx_spark6 = S_RegisterSound ("world/spark6.wav");
+	cl_sfx_spark7 = S_RegisterSound ("world/spark7.wav");
+	cl_sfx_railg = S_RegisterSound ("weapons/railgf1a.wav");
+	cl_sfx_rockexp = S_RegisterSound ("weapons/rocklx1a.wav");
+	cl_sfx_grenexp = S_RegisterSound ("weapons/grenlx1a.wav");
+	cl_sfx_watrexp = S_RegisterSound ("weapons/xpld_wat.wav");
+	// RAFAEL
+	// cl_sfx_plasexp = S_RegisterSound ("weapons/plasexpl.wav");
+	//PGM
+	cl_sfx_lightning = S_RegisterSound ("weapons/tesla.wav");
+	cl_sfx_disrexp = S_RegisterSound ("weapons/disrupthit.wav");
+	S_RegisterSound ("player/land1.wav");
+	S_RegisterSound ("player/fall2.wav");
+	S_RegisterSound ("player/fall1.wav");
+#else // paintball 2
 	cl_sfx_splat[0] = S_RegisterSound("splat/splat1.wav");
 	cl_sfx_splat[1] = S_RegisterSound("splat/splat2.wav");
 	cl_sfx_splat_barrel[0] = S_RegisterSound("splat/splat_barrel1.wav");
@@ -337,13 +360,15 @@ void CL_SmokeAndFlash(vec3_t origin)
 	ex->start = cl.frame.servertime - 100;
 	ex->ent.model = cl_mod_smoke;
 
-	//ex = CL_AllocExplosion();
-	//VectorCopy(origin, ex->ent.origin);
-	//ex->type = ex_flash;
-	//ex->ent.flags = RF_FULLBRIGHT;
-	//ex->frames = 2;
-	//ex->start = cl.frame.servertime - 100;
-	//ex->ent.model = cl_mod_flash;
+#ifdef QUAKE2
+	ex = CL_AllocExplosion();
+	VectorCopy(origin, ex->ent.origin);
+	ex->type = ex_flash;
+	ex->ent.flags = RF_FULLBRIGHT;
+	ex->frames = 2;
+	ex->start = cl.frame.servertime - 100;
+	ex->ent.model = cl_mod_flash;
+#endif
 }
 
 /*
@@ -467,6 +492,77 @@ int CL_ParseBeam2 (struct model_s *model)
 }
 
 
+// ROGUE
+/*
+=================
+CL_ParsePlayerBeam
+  - adds to the cl_playerbeam array instead of the cl_beams array
+=================
+*/
+int CL_ParsePlayerBeam (struct model_s *model)
+{
+	int		ent;
+	vec3_t	start, end;
+#ifdef QUAKE2
+	vec3_t	offset;
+	beam_t	*b;
+	int		i;
+#endif
+
+	ent = MSG_ReadShort (&net_message);
+
+	MSG_ReadPos (&net_message, start);
+	MSG_ReadPos (&net_message, end);
+#ifdef QUAKE2
+	// PMM - network optimization
+	if (model == cl_mod_heatbeam)
+		VectorSet(offset, 2, 7, -3);
+	else if (model == cl_mod_monster_heatbeam)
+	{
+		model = cl_mod_heatbeam;
+		VectorSet(offset, 0, 0, 0);
+	}
+	else
+		MSG_ReadPos (&net_message, offset);
+
+//	Com_Printf ("end- %f %f %f\n", end[0], end[1], end[2]);
+
+// override any beam with the same entity
+// PMM - For player beams, we only want one per player (entity) so..
+	for (i=0, b=cl_playerbeams ; i< MAX_BEAMS ; i++, b++)
+	{
+		if (b->entity == ent)
+		{
+			b->entity = ent;
+			b->model = model;
+			b->endtime = cl.time + 200;
+			VectorCopy (start, b->start);
+			VectorCopy (end, b->end);
+			VectorCopy (offset, b->offset);
+			return ent;
+		}
+	}
+
+// find a free beam
+	for (i=0, b=cl_playerbeams ; i< MAX_BEAMS ; i++, b++)
+	{
+		if (!b->model || b->endtime < cl.time)
+		{
+			b->entity = ent;
+			b->model = model;
+			b->endtime = cl.time + 100;		// PMM - this needs to be 100 to prevent multiple heatbeams
+			VectorCopy (start, b->start);
+			VectorCopy (end, b->end);
+			VectorCopy (offset, b->offset);
+			return ent;
+		}
+	}
+	Com_Printf ("beam list overflow!\n");
+#endif
+	return ent;
+}
+//rogue
+
 /*
 =================
 CL_ParseLightning
@@ -476,15 +572,17 @@ int CL_ParseLightning (struct model_s *model)
 {
 	int		srcEnt, destEnt;
 	vec3_t	start, end;
+#ifdef QUAKE2
 	beam_t	*b;
 	int		i;
-	
+#endif
+
 	srcEnt = MSG_ReadShort (&net_message);
 	destEnt = MSG_ReadShort (&net_message);
 
 	MSG_ReadPos (&net_message, start);
 	MSG_ReadPos (&net_message, end);
-
+#ifdef QUAKE2
 // override any beam with the same source AND destination entities
 	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
 		if (b->entity == srcEnt && b->dest_entity == destEnt)
@@ -516,7 +614,8 @@ int CL_ParseLightning (struct model_s *model)
 			return srcEnt;
 		}
 	}
-	Com_Printf ("Beam list overflow!\n");	
+	Com_Printf ("Beam list overflow!\n");
+#endif // QUAKE2
 	return srcEnt;
 }
 
@@ -876,7 +975,12 @@ void CL_ParseTEnt (void)
 		// ===
 		break;
 
-	case TE_CHAINFIST_SMOKE: // jit -- paintball2 smoke grenade puffs!
+	case TE_CHAINFIST_SMOKE:
+#ifdef QUAKE2
+		dir[0]=0; dir[1]=0; dir[2]=1;
+		MSG_ReadPos(&net_message, pos);
+		CL_ParticleSmokeEffect (pos, dir, 0, 20, 20);
+#else  // jit -- paintball2 smoke grenade puffs!
 		MSG_ReadPos(&net_message, pos);
 
 		for(r = 0; r < 3; r++)
@@ -904,10 +1008,8 @@ void CL_ParseTEnt (void)
 			ex->frames = 1;
 			ex->ent.model = cl_mod_smoke;
 		}
-
+#endif
 		break;
-
-	// old crap we can probably get rid of:
 
 	case TE_BLOOD:			// bullet hitting flesh
 		MSG_ReadPos (&net_message, pos);
@@ -974,16 +1076,19 @@ void CL_ParseTEnt (void)
 
 		break;
 
+
+	// RAFAEL
+	case TE_BLUEHYPERBLASTER:
+		MSG_ReadPos (&net_message, pos);
+		MSG_ReadPos (&net_message, dir);
+		CL_BlasterParticles (pos, dir);
+		break;
+
 	case TE_BLASTER:			// blaster hitting wall
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
 		CL_BlasterParticles (pos, dir);
-
-		rgbcolour[0] = 1.1;
-		rgbcolour[1] = 1.1;
-		rgbcolour[2] = 0;
-		V_AddStain(pos, rgbcolour, 10);
-
+#ifdef QUAKE2
 		ex = CL_AllocExplosion ();
 		VectorCopy (pos, ex->ent.origin);
 		ex->ent.angles[0] = acos(dir[2])/M_PI*180;
@@ -1003,10 +1108,12 @@ void CL_ParseTEnt (void)
 		ex->light = 150;
 		ex->lightcolor[0] = 1;
 		ex->lightcolor[1] = 1;
-		ex->ent.model = cl_mod_smoke;
+		ex->ent.model = cl_mod_explode;
 		ex->frames = 4;
+		S_StartSound (pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
+#endif
 		break;
-		
+
 	case TE_RAILTRAIL:			// railgun effect
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadPos (&net_message, pos2);
@@ -1018,13 +1125,8 @@ void CL_ParseTEnt (void)
 	case TE_GRENADE_EXPLOSION_WATER:
 		MSG_ReadPos (&net_message, pos);
 
-		rgbcolour[0] = 0.8;
-		rgbcolour[1] = 0.8;
-		rgbcolour[2] = 0.8;
-		V_AddStain(pos, rgbcolour, 35);
-
-		ex = CL_AllocExplosion();
-		VectorCopy(pos, ex->ent.origin);
+		ex = CL_AllocExplosion ();
+		VectorCopy (pos, ex->ent.origin);
 		ex->type = ex_poly;
 		ex->ent.flags = RF_FULLBRIGHT;
 		ex->start = cl.frame.servertime - 100;
@@ -1032,36 +1134,25 @@ void CL_ParseTEnt (void)
 		ex->lightcolor[0] = 1.0;
 		ex->lightcolor[1] = 0.5;
 		ex->lightcolor[2] = 0.5;
-		ex->ent.model = cl_mod_smoke;
+#ifdef QUAKE2
+		ex->ent.model = cl_mod_explo4;
+#endif
 		ex->frames = 19;
 		ex->baseframe = 30;
 		ex->ent.angles[1] = rand() % 360;
-		CL_ExplosionParticles(pos);
-
+		CL_ExplosionParticles (pos);
 #ifdef QUAKE2
-		ex->ent.angles[1] = rand() % 360;
-
 		if (type == TE_GRENADE_EXPLOSION_WATER)
-			S_StartSound(pos, 0, 0, cl_sfx_watrexp, 1, ATTN_NORM, 0);
+			S_StartSound (pos, 0, 0, cl_sfx_watrexp, 1, ATTN_NORM, 0);
 		else
-			S_StartSound(pos, 0, 0, cl_sfx_grenexp, 1, ATTN_NORM, 0);
+			S_StartSound (pos, 0, 0, cl_sfx_grenexp, 1, ATTN_NORM, 0);
 #endif
 		break;
 
 	// RAFAEL
-
-	
-	case TE_EXPLOSION1:
-	case TE_EXPLOSION1_BIG:						// PMM
-	case TE_ROCKET_EXPLOSION:
-	case TE_ROCKET_EXPLOSION_WATER:
-	case TE_EXPLOSION1_NP:						// PMM
+	case TE_PLASMA_EXPLOSION:
 		MSG_ReadPos (&net_message, pos);
-		rgbcolour[0] = 0.8;
-		rgbcolour[1] = 0.8;
-		rgbcolour[2] = 0.8;
-		V_AddStain(pos, rgbcolour, 35);
-		ex = CL_AllocExplosion();
+		ex = CL_AllocExplosion ();
 		VectorCopy (pos, ex->ent.origin);
 		ex->type = ex_poly;
 		ex->ent.flags = RF_FULLBRIGHT;
@@ -1071,15 +1162,51 @@ void CL_ParseTEnt (void)
 		ex->lightcolor[1] = 0.5;
 		ex->lightcolor[2] = 0.5;
 		ex->ent.angles[1] = rand() % 360;
-		ex->ent.model = cl_mod_smoke;
-
+#ifdef QUAKE2
+		ex->ent.model = cl_mod_explo4;
 		if (frand() < 0.5)
 			ex->baseframe = 15;
-
 		ex->frames = 15;
+		CL_ExplosionParticles (pos);
+		S_StartSound (pos, 0, 0, cl_sfx_rockexp, 1, ATTN_NORM, 0);
+#endif
+		break;
 
+	case TE_EXPLOSION1:
+	case TE_EXPLOSION1_BIG:						// PMM
+	case TE_ROCKET_EXPLOSION:
+	case TE_ROCKET_EXPLOSION_WATER:
+	case TE_EXPLOSION1_NP:						// PMM
+		MSG_ReadPos (&net_message, pos);
+
+		ex = CL_AllocExplosion ();
+		VectorCopy (pos, ex->ent.origin);
+		ex->type = ex_poly;
+		ex->ent.flags = RF_FULLBRIGHT;
+		ex->start = cl.frame.servertime - 100;
+		ex->light = 350;
+		ex->lightcolor[0] = 1.0;
+		ex->lightcolor[1] = 0.5;
+		ex->lightcolor[2] = 0.5;
+		ex->ent.angles[1] = rand() % 360;
+#ifdef QUAKE2
+		if (type != TE_EXPLOSION1_BIG)				// PMM
+			ex->ent.model = cl_mod_explo4;			// PMM
+		else
+			ex->ent.model = cl_mod_explo4_big;
+#endif
+		if (frand() < 0.5)
+			ex->baseframe = 15;
+		ex->frames = 15;
 		if ((type != TE_EXPLOSION1_BIG) && (type != TE_EXPLOSION1_NP))		// PMM
-			CL_ExplosionParticles(pos);									// PMM
+			CL_ExplosionParticles (pos);									// PMM
+#ifdef QUAKE2
+		if (type == TE_ROCKET_EXPLOSION_WATER)
+			S_StartSound (pos, 0, 0, cl_sfx_watrexp, 1, ATTN_NORM, 0);
+		else
+			S_StartSound (pos, 0, 0, cl_sfx_rockexp, 1, ATTN_NORM, 0);
+#endif
+		break;
 
 #ifdef QUAKE2
 		if (type != TE_EXPLOSION1_BIG)				// PMM
@@ -1105,7 +1232,9 @@ void CL_ParseTEnt (void)
 		ex->lightcolor[0] = 0.0;
 		ex->lightcolor[1] = 1.0;
 		ex->lightcolor[2] = 0.0;
-		ex->ent.model = cl_mod_smoke;
+#ifdef QUAKE2
+		ex->ent.model = cl_mod_bfg_explo;
+#endif
 		ex->ent.flags |= RF_TRANSLUCENT;
 		ex->ent.alpha = 0.30;
 		ex->frames = 4;
@@ -1126,16 +1255,33 @@ void CL_ParseTEnt (void)
 		CL_BubbleTrail (pos, pos2);
 		break;
 
+	case TE_PARASITE_ATTACK:
 	case TE_MEDIC_CABLE_ATTACK:
-//		ent = CL_ParseBeam (cl_mod_parasite_segment);
+#ifdef QUAKE2
+		ent = CL_ParseBeam (cl_mod_parasite_segment);
+#endif
+		break;
+
+	case TE_BOSSTPORT:			// boss teleporting to station
+		MSG_ReadPos (&net_message, pos);
+		CL_BigTeleportParticles (pos);
+#ifdef QUAKE2
+		S_StartSound (pos, 0, 0, S_RegisterSound ("misc/bigtele.wav"), 1, ATTN_NONE, 0);
+#endif
+		break;
+
+	case TE_GRAPPLE_CABLE:
+#ifdef QUAKE2
+		ent = CL_ParseBeam2 (cl_mod_grapple_cable);
+#endif
 		break;
 
 	// RAFAEL
 	case TE_WELDING_SPARKS:
-		cnt = MSG_ReadByte(&net_message);
+		cnt = MSG_ReadByte (&net_message);
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
-		color = MSG_ReadByte(&net_message);
+		color = MSG_ReadByte (&net_message);
 		CL_ParticleEffect2 (pos, dir, color, cnt);
 
 		ex = CL_AllocExplosion ();
@@ -1149,8 +1295,16 @@ void CL_ParseTEnt (void)
 		ex->lightcolor[0] = 1.0;
 		ex->lightcolor[1] = 1.0;
 		ex->lightcolor[2] = 0.3;
-		ex->ent.model = cl_mod_smoke;
+#ifdef QUAKE2
+		ex->ent.model = cl_mod_flash;
+#endif
 		ex->frames = 2;
+		break;
+
+	case TE_GREENBLOOD:
+		MSG_ReadPos (&net_message, pos);
+		MSG_ReadDir (&net_message, dir);
+		CL_ParticleEffect2 (pos, dir, 0xdf, 30);
 		break;
 
 	// RAFAEL
@@ -1209,8 +1363,21 @@ void CL_ParseTEnt (void)
 			ex->lightcolor[1] = 0.41;
 			ex->lightcolor[2] = 0.75;
 		}
-		ex->ent.model = cl_mod_smoke;
+#ifdef QUAKE2
+		ex->ent.model = cl_mod_explode;
 		ex->frames = 4;
+		S_StartSound (pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
+#endif
+		break;
+
+
+	case TE_LIGHTNING:
+#ifdef QUAKE2
+		ent = CL_ParseLightning (cl_mod_lightning);
+		S_StartSound (NULL, ent, CHAN_WEAPON, cl_sfx_lightning, 1, ATTN_NORM, 0);
+#else
+		ent = CL_ParseLightning (NULL);
+#endif
 		break;
 
 	case TE_DEBUGTRAIL:
@@ -1219,13 +1386,9 @@ void CL_ParseTEnt (void)
 		CL_DebugTrail (pos, pos2);
 		break;
 
+
 	case TE_PLAIN_EXPLOSION:
 		MSG_ReadPos (&net_message, pos);
-
-		rgbcolour[0] = 0.8;
-		rgbcolour[1] = 0.8;
-		rgbcolour[2] = 0.8;
-		V_AddStain(pos, rgbcolour, 35);
 
 		ex = CL_AllocExplosion ();
 		VectorCopy (pos, ex->ent.origin);
@@ -1237,11 +1400,18 @@ void CL_ParseTEnt (void)
 		ex->lightcolor[1] = 0.5;
 		ex->lightcolor[2] = 0.5;
 		ex->ent.angles[1] = rand() % 360;
-		ex->ent.model = cl_mod_smoke;
+#ifdef QUAKE2
+		ex->ent.model = cl_mod_explo4;
 		if (frand() < 0.5)
 			ex->baseframe = 15;
 		ex->frames = 15;
+		if (type == TE_ROCKET_EXPLOSION_WATER)
+			S_StartSound (pos, 0, 0, cl_sfx_watrexp, 1, ATTN_NORM, 0);
+		else
+			S_StartSound (pos, 0, 0, cl_sfx_rockexp, 1, ATTN_NORM, 0);
+#endif
 		break;
+
 
 	case TE_FLASHLIGHT:
 		MSG_ReadPos(&net_message, pos);
@@ -1256,6 +1426,50 @@ void CL_ParseTEnt (void)
 		CL_ForceWall(pos, pos2, color);
 		break;
 
+	case TE_HEATBEAM:
+#ifdef QUAKE2
+		ent = CL_ParsePlayerBeam (cl_mod_heatbeam);
+#endif
+		break;
+
+	case TE_MONSTER_HEATBEAM:
+#ifdef QUAKE2
+		ent = CL_ParsePlayerBeam (cl_mod_monster_heatbeam);
+#endif
+		break;
+
+	case TE_HEATBEAM_SPARKS:
+//		cnt = MSG_ReadByte (&net_message);
+		cnt = 50;
+		MSG_ReadPos (&net_message, pos);
+		MSG_ReadDir (&net_message, dir);
+//		r = MSG_ReadByte (&net_message);
+//		magnitude = MSG_ReadShort (&net_message);
+		r = 8;
+		//magnitude = 60;
+		color = r & 0xff;
+		CL_ParticleSteamEffect (pos, dir, color, cnt, 60);
+#ifdef QUAKE2
+		S_StartSound (pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
+#endif
+		break;
+
+	case TE_HEATBEAM_STEAM:
+//		cnt = MSG_ReadByte (&net_message);
+		cnt = 20;
+		MSG_ReadPos (&net_message, pos);
+		MSG_ReadDir (&net_message, dir);
+//		r = MSG_ReadByte (&net_message);
+//		magnitude = MSG_ReadShort (&net_message);
+//		color = r & 0xff;
+		color = 0xe0;
+		//magnitude = 60;
+		CL_ParticleSteamEffect (pos, dir, color, cnt, 60);
+#ifdef QUAKE2
+		S_StartSound (pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
+#endif
+		break;
+
 	case TE_STEAM:
 		CL_ParseSteam();
 		break;
@@ -1265,6 +1479,33 @@ void CL_ParseTEnt (void)
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadPos (&net_message, pos2);
 		CL_BubbleTrail2 (pos, pos2, cnt);
+		break;
+
+	case TE_MOREBLOOD:
+		MSG_ReadPos (&net_message, pos);
+		MSG_ReadDir (&net_message, dir);
+		CL_ParticleEffect (pos, dir, 0xe8, 250);
+		break;
+
+	case TE_ELECTRIC_SPARKS:
+		MSG_ReadPos (&net_message, pos);
+		MSG_ReadDir (&net_message, dir);
+//		CL_ParticleEffect (pos, dir, 109, 40);
+		CL_ParticleEffect (pos, dir, 0x75, 40);
+		//FIXME : replace or remove this sound
+#ifdef QUAKE2
+		S_StartSound (pos, 0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
+#endif
+		break;
+
+	case TE_TRACKER_EXPLOSION:
+		MSG_ReadPos (&net_message, pos);
+		CL_ColorFlash (pos, 0, 150, -1, -1, -1);
+		CL_ColorExplosionParticles (pos, 0, 1);
+#ifdef QUAKE2
+//		CL_Tracker_Explode (pos);
+		S_StartSound (pos, 0, 0, cl_sfx_disrexp, 1, ATTN_NORM, 0);
+#endif
 		break;
 
 	case TE_TELEPORT_EFFECT:
@@ -1289,10 +1530,9 @@ void CL_ParseTEnt (void)
 //==============
 
 	default:
-		Com_Error (ERR_DROP, "CL_ParseTEnt: bad type");
+		Com_Error (ERR_DROP, "CL_ParseTEnt: bad type: %d", type); // jit: actually give some hint as to what the type was.
 	}
 }
-
 /*
 =================
 CL_AddBeams
@@ -1300,6 +1540,7 @@ CL_AddBeams
 */
 void CL_AddBeams (void)
 {
+#ifdef QUAKE2
 	int			i,j;
 	beam_t		*b;
 	vec3_t		dist, org;
@@ -1355,13 +1596,14 @@ void CL_AddBeams (void)
 
 	// add new entities for the beams
 		d = VectorNormalizeRetLen(dist);
-		memset(&ent, 0, sizeof(ent));
-/*		if (b->model == cl_mod_lightning)
+
+		memset (&ent, 0, sizeof(ent));
+		if (b->model == cl_mod_lightning)
 		{
 			model_length = 35.0;
 			d-= 20.0;  // correction so it doesn't end in middle of tesla
 		}
-		else*/
+		else
 		{
 			model_length = 30.0;
 		}
@@ -1371,7 +1613,7 @@ void CL_AddBeams (void)
 		// PMM - special case for lightning model .. if the real length is shorter than the model,
 		// flip it around & draw it from the end to the start.  This prevents the model from going
 		// through the tesla mine (instead it goes through the target)
-/*		if ((b->model == cl_mod_lightning) && (d <= model_length))
+		if ((b->model == cl_mod_lightning) && (d <= model_length))
 		{
 //			Com_Printf ("special case\n");
 			VectorCopy (b->end, ent.origin);
@@ -1384,21 +1626,21 @@ void CL_AddBeams (void)
 			ent.angles[0] = pitch;
 			ent.angles[1] = yaw;
 			ent.angles[2] = rand()%360;
-			V_AddEntity (&ent);			
+			V_AddEntity (&ent);
 			return;
-		}*/
+		}
 		while (d > 0)
 		{
 			VectorCopy (org, ent.origin);
 			ent.model = b->model;
-/*			if (b->model == cl_mod_lightning)
+			if (b->model == cl_mod_lightning)
 			{
 				ent.flags = RF_FULLBRIGHT;
 				ent.angles[0] = -pitch;
 				ent.angles[1] = yaw + 180.0;
 				ent.angles[2] = rand()%360;
 			}
-			else*/
+			else
 			{
 				ent.angles[0] = pitch;
 				ent.angles[1] = yaw;
@@ -1413,6 +1655,7 @@ void CL_AddBeams (void)
 			d -= model_length;
 		}
 	}
+#endif
 }
 
 
@@ -1421,6 +1664,105 @@ void CL_AddBeams (void)
 CL_AddExplosions
 =================
 */
+#ifdef QUAKE2
+void CL_AddExplosions (void)
+{
+	entity_t	*ent;
+	int			i;
+	explosion_t	*ex;
+	float		frac;
+	int			f;
+
+	memset (&ent, 0, sizeof(ent));
+
+	for (i=0, ex=cl_explosions ; i< MAX_EXPLOSIONS ; i++, ex++)
+	{
+		if (ex->type == ex_free)
+			continue;
+		frac = (cl.time - ex->start)/100.0;
+		f = floor(frac);
+
+		ent = &ex->ent;
+
+		switch (ex->type)
+		{
+		case ex_mflash:
+			if (f >= ex->frames-1)
+				ex->type = ex_free;
+			break;
+		case ex_misc:
+			if (f >= ex->frames-1)
+			{
+				ex->type = ex_free;
+				break;
+			}
+			ent->alpha = 1.0 - frac/(ex->frames-1);
+			break;
+		case ex_flash:
+			if (f >= 1)
+			{
+				ex->type = ex_free;
+				break;
+			}
+			ent->alpha = 1.0;
+			break;
+		case ex_poly:
+			if (f >= ex->frames-1)
+			{
+				ex->type = ex_free;
+				break;
+			}
+
+			ent->alpha = (16.0 - (float)f)/16.0;
+
+			if (f < 10)
+			{
+				ent->skinnum = (f>>1);
+				if (ent->skinnum < 0)
+					ent->skinnum = 0;
+			}
+			else
+			{
+				ent->flags |= RF_TRANSLUCENT;
+				if (f < 13)
+					ent->skinnum = 5;
+				else
+					ent->skinnum = 6;
+			}
+			break;
+		case ex_poly2:
+			if (f >= ex->frames-1)
+			{
+				ex->type = ex_free;
+				break;
+			}
+
+			ent->alpha = (5.0 - (float)f)/5.0;
+			ent->skinnum = 0;
+			ent->flags |= RF_TRANSLUCENT;
+			break;
+		}
+
+		if (ex->type == ex_free)
+			continue;
+		if (ex->light)
+		{
+			V_AddLight (ent->origin, ex->light*ent->alpha,
+				ex->lightcolor[0], ex->lightcolor[1], ex->lightcolor[2]);
+		}
+
+		VectorCopy (ent->origin, ent->oldorigin);
+
+		if (f < 0)
+			f = 0;
+		ent->frame = ex->baseframe + f + 1;
+		ent->oldframe = ex->baseframe + f;
+		ent->backlerp = 1.0 - cl.lerpfrac;
+
+		V_AddEntity (ent);
+	}
+}
+#else // paintball 2
 void CL_AddExplosions (void) // jitsmoke
 {
 	explosion_t	*ex;
@@ -1456,6 +1798,7 @@ void CL_AddExplosions (void) // jitsmoke
 		}
 	}
 }
+#endif // QUAKE2
 
 
 /*

@@ -1531,7 +1531,11 @@ void SV_Init (void)
 
 	rcon_password = Cvar_Get("rcon_password", "", 0);
 	Cvar_Get("skill", "1", 0);
+#ifdef QUAKE2
+	Cvar_Get("deathmatch", "0", CVAR_LATCH);
+#else // jitspoe - paintball2 defaults to deathmatch on
 	Cvar_Get("deathmatch", "1", CVAR_LATCH);
+#endif
 	Cvar_Get("coop", "0", CVAR_LATCH);
 	Cvar_Get("dmflags", va("%i", DF_INSTANT_ITEMS), 0); // jit, removed serverinfo flag
 	Cvar_Get("fraglimit", "50", CVAR_SERVERINFO); // jit, was 0
