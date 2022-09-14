@@ -39,6 +39,8 @@ static char g_szUserNameURL[256];
 static char g_szUserName[64];
 static int g_nUserID;
 qboolean g_notified_of_new_version = false;
+static float g_fTimeToRetryLogin = 0.0;
+static float g_fLoginRetryTime = 0.8; // first attempt at 800ms, then we'll double it each time it fails, so we don't spam.
 
 static const char *GetUniqueSystemString (void)
 {
@@ -417,6 +419,7 @@ void CL_ProfileLogin_f (void)
 	{
 		Netchan_OutOfBandPrint(NS_CLIENT, adr, "vninit\nusername=%s&uniqueid=%d", g_szUserNameURL, g_nVNInitUnique);
 		Cbuf_AddText("menu profile_login\n");
+		g_fTimeToRetryLogin = g_fLoginRetryTime; // Start a timer to retry in case packets get dropped.
 	}
 	else
 	{
@@ -492,6 +495,7 @@ void CL_VNInitResponse (netadr_t adr_from, sizebuf_t *ptData)
 	if (!s || !s2)
 	{
 		M_PopMenu("profile_login"); // Remove "Connecting to login server..." screen.
+		g_fTimeToRetryLogin = 0.0f; // Got a response.  Don't need to retry.
 
 		if (s = strstr(szDataBack, "ERROR:"))
 		{
@@ -538,6 +542,7 @@ void CL_VNInitResponse (netadr_t adr_from, sizebuf_t *ptData)
 		strlen(g_szRandomString), szPassHash2, sizeof(szPassHash2));
 	Netchan_OutOfBandPrint(NS_CLIENT, adr_from, "clvn\nusername=%s&pwhash=%s&uniqueid=%d",
 		g_szUserNameURL, szPassHash2, g_nVNInitUnique);
+	g_fTimeToRetryLogin = g_fLoginRetryTime; // Reset retry timer
 }
 
 
@@ -552,6 +557,7 @@ void CL_VNResponse (netadr_t adr_from, sizebuf_t *ptData)
 	s = strstr(szDataBack, "GameLoginStatus: PASSED");
 
 	M_PopMenu("profile_login"); // Remove "Connecting to login server..." screen.
+	g_fTimeToRetryLogin = 0.0; // Got a response.  Don't need to retry.
 
 	if (!s)
 	{
@@ -784,3 +790,22 @@ void CL_InitProfile (void)
 	Cmd_AddCommand("profile_get_login", CL_ProfileGetLogin_f);
 }
 
+
+void CL_TickProfile (void)
+{
+	if (g_fTimeToRetryLogin > 0.0f)
+	{
+		g_fTimeToRetryLogin -= cl.frametime;
+		if (g_fTimeToRetryLogin <= 0.0f)
+		{
+			netadr_t adr;
+
+			if (NET_StringToAdr("dplogin.com:27900", &adr))
+			{
+				Netchan_OutOfBandPrint(NS_CLIENT, adr, "vninit\nusername=%s&uniqueid=%d", g_szUserNameURL, g_nVNInitUnique);
+				g_fLoginRetryTime *= 2.0f;
+				g_fTimeToRetryLogin = g_fLoginRetryTime;
+			}
+		}
+	}
+}

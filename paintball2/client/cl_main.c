@@ -145,6 +145,7 @@ extern	cvar_t *allow_download_maps;
 extern cvar_t *Cvar_FindVar (char *var_name);
 qboolean CL_HasProfile ();
 void CL_Serverlist_RunFrame ();
+void CL_TickProfile ();
 extern qboolean g_notified_of_new_version;
 
 void CL_Toggle_f (void)
@@ -2723,6 +2724,9 @@ void CL_Frame (int msec)
 #ifdef XFIRE
 	CL_Xfire(); // jitxfire
 #endif
+#ifdef DISCORD // jitdiscord
+	CL_Discord();
+#endif
 
 	extratime += msec;
 	sendtime += msec; // jitnetfps
@@ -2824,6 +2828,8 @@ void CL_Frame (int msec)
 	CL_RunLightStyles();
 	SCR_RunCinematic();
 	SCR_RunConsole();
+
+	CL_TickProfile(); // jitprofile
 
 	cls.framecount++;
 
