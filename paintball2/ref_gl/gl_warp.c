@@ -275,6 +275,62 @@ float CalcWave (float x, float y) // jitwater / MPO
 }
 
 // === jitwater
+void RenderNonReflectiveWater(msurface_t *fa, float scroll)
+{
+	glpoly_t	*p;
+	glpoly_t	*bp;
+	int			i;
+	float		*v;
+	float		os;
+	float		ot;
+	float		s;
+	float		t;
+	float		rdt = r_newrefdef.time;
+
+	for (bp = fa->polys; bp; bp = bp->next)
+	{
+		p = bp;
+		qgl.Begin(GL_TRIANGLE_FAN);
+		c_brush_polys += p->numverts / 3; // jitrspeeds
+
+		for (i = 0, v = p->verts[0]; i < p->numverts; i++, v += VERTEXSIZE)
+		{
+			os = v[3];
+			ot = v[4];
+
+			#if !id386
+			s = os + r_turbsin[(int)((ot * 0.125f + r_newrefdef.time) * TURBSCALE) & 255];
+			#else
+			s = os + r_turbsin[Q_ftol(((ot * 0.125f + rdt) * TURBSCALE)) & 255];
+			#endif
+
+			s += scroll;
+			s *= 0.015625f; // 1/64
+
+			#if !id386
+			t = ot + r_turbsin[(int)((os * 0.125f + rdt) * TURBSCALE) & 255];
+			#else
+			t = ot + r_turbsin[Q_ftol(((os * 0.125f + rdt) * TURBSCALE)) & 255];
+			#endif
+			t *= 0.015625f; // 1/64
+			/*
+			// if it hasn't been initalized before
+			if (zValue == 0.0f)
+				zValue = v[2];
+
+			// Make sure polygons are on the same plane
+			// Fix for not perfectly flat water on base1 - strange ..
+			else if (fabs(zValue - v[2]) > 0.1f)
+				waterNotFlat = true;
+			*/
+			qgl.TexCoord2f(s, t);
+			qgl.Vertex3f(v[0], v[1], v[2]);
+		}
+
+		qgl.End();
+	}
+}
+
 extern image_t *distort_tex;
 extern image_t *water_normal_tex;
 void R_GetReflTexScale (float *w, float *h);
@@ -286,15 +342,15 @@ void EmitWaterPolys (msurface_t *fa)
 	glpoly_t	*bp;
 	float		*v;
 	int			i;
-	float		s;
-	float		t;
-	float		os;
-	float		ot;
 	float		scroll;
 	float		rdt = r_newrefdef.time;
 	float		zValue = 0.0;			// height of water
-	qboolean	waterNotFlat = false;
+	//qboolean	waterNotFlat = false;
 	qboolean	flowing;
+	float		best_reflection_dist = 128.0;
+	int			best_reflection_index = -1;
+	qboolean	reflect_water = r_reflectivewater->value;
+	qboolean	rendered_non_reflective_water = false;
 	//==============================
 
 	if (g_drawing_refl)
@@ -302,7 +358,7 @@ void EmitWaterPolys (msurface_t *fa)
 
 	if (fa->texinfo->flags & SURF_FLOWING)
 	{
-		scroll = -64.0f * ((r_newrefdef.time * 0.5f) - (int)(r_newrefdef.time * 0.5f));
+		scroll = -64.0f * ((rdt * 0.5f) - (int)(rdt * 0.5f));
 		flowing = true;
 	}
 	else
@@ -311,8 +367,14 @@ void EmitWaterPolys (msurface_t *fa)
 		flowing = false;
 	}
 
-	// skip the water texture on transparent surfaces
-	if (r_reflectivewater->value && (fa->texinfo->flags & (SURF_TRANS33|SURF_TRANS66)))
+	// Non-transparent water needs the texture drawn:
+	if (!(fa->texinfo->flags & (SURF_TRANS33|SURF_TRANS66)))
+	{
+		RenderNonReflectiveWater(fa, scroll);
+		rendered_non_reflective_water = true; // Make sure we don't render this twice if the reflection render fails.
+	}
+
+	if (reflect_water)
 	{
 		for (bp = fa->polys; bp; bp = bp->next)
 		{
@@ -327,61 +389,12 @@ void EmitWaterPolys (msurface_t *fa)
 				// Make sure polygons are on the same plane
 				// Fix for not perfectly flat water on base1 - strange ..
 				else if (fabs(zValue - v[2]) > 8.0f)
-					waterNotFlat = true;
+					reflect_water = false;
 			}
 		}
 	}
 
-	if (waterNotFlat || !r_reflectivewater->value || !(fa->texinfo->flags & (SURF_TRANS33|SURF_TRANS66)))
-	{
-		for (bp = fa->polys; bp; bp = bp->next)
-		{
-			p = bp;
-			qgl.Begin(GL_TRIANGLE_FAN);
-			c_brush_polys += p->numverts / 3; // jitrspeeds
-
-			for (i = 0, v = p->verts[0]; i < p->numverts; i++, v += VERTEXSIZE)
-			{
-				os = v[3];
-				ot = v[4];
-
-				#if !id386
-				s = os + r_turbsin[(int)((ot * 0.125f + r_newrefdef.time) * TURBSCALE) & 255];
-				#else
-				s = os + r_turbsin[Q_ftol(((ot * 0.125f + rdt) * TURBSCALE)) & 255];
-				#endif
-
-				s += scroll;
-				s *= 0.015625f; // 1/64
-
-				#if !id386
-				t = ot + r_turbsin[(int)((os * 0.125f + rdt) * TURBSCALE) & 255];
-				#else
-				t = ot + r_turbsin[Q_ftol(((os * 0.125f + rdt) * TURBSCALE)) & 255];
-				#endif
-				t *= 0.015625f; // 1/64
-
-				// if it hasn't been initalized before
-				if (zValue == 0.0f)
-					zValue = v[2];
-
-				// Make sure polygons are on the same plane
-				// Fix for not perfectly flat water on base1 - strange ..
-				else if (fabs(zValue - v[2]) > 0.1f)
-					waterNotFlat = true;
-
-				qgl.TexCoord2f(s, t);
-				qgl.Vertex3f(v[0], v[1], v[2]);
-			}
-
-			qgl.End();
-		}
-	}
-
-	if (waterNotFlat)
-		return;
-
-	if (r_reflectivewater->value)
+	if (reflect_water)
 	{
 #if 0
 		//====================
@@ -398,15 +411,25 @@ void EmitWaterPolys (msurface_t *fa)
 #endif
 		R_add_refl(v[0], v[1], zValue);
 		g_refl_enabled = true;
-	}
-
-	// find out which reflection we have that corresponds to the surface that we're drawing
-	for (g_active_refl = 0; g_active_refl < g_num_refl; g_active_refl++)
-	{
-		// if we find which reflection to bind
-		if (fabs(g_refl_Z[g_active_refl] - zValue) < 8.0f)
+		// === jitwater
+		reflect_water = false; // Unset this so we can render non-reflective water if we don't find a similar surface
+		// find out which reflection we have that corresponds to the surface that we're drawing
+		for (g_active_refl = 0; g_active_refl < g_num_refl; g_active_refl++)
 		{
-			// === jitwater
+			float reflection_dist = fabs(g_refl_Z[g_active_refl] - zValue);
+			// if we find which reflection to bind
+			if (reflection_dist < best_reflection_dist)
+			{
+				best_reflection_dist = reflection_dist;
+				best_reflection_index = g_active_refl;
+				reflect_water = true;
+				break;
+			}
+		}
+
+		// if we found a reflective surface correctly, then go ahead and draw it
+		if (reflect_water)
+		{
 			if (gl_state.fragment_program)
 			{
 				qgl.Enable(GL_VERTEX_PROGRAM_ARB);
@@ -419,97 +442,96 @@ void EmitWaterPolys (msurface_t *fa)
 			}
 
 			GL_MBind(QGL_TEXTURE0, g_refl_images[g_active_refl]->texnum); // Reflection texture
-			// jitwater ===
+		// jitwater ===
 
-			break;
-		}
-	}
+			qgl.Color4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-	// if we found a reflective surface correctly, then go ahead and draw it
-	if (g_active_refl != g_num_refl)
-	{
-		qgl.Color4f(1.0f, 1.0f, 1.0f, 1.0f);
+			if (!gl_state.blend)
+				qgl.Enable(GL_BLEND);
 
-		if (!gl_state.blend)
-			qgl.Enable(GL_BLEND);
+			GL_TexEnv(GL_MODULATE);
+			qgl.ShadeModel(GL_SMOOTH);
 
-		GL_TexEnv(GL_MODULATE);
-		qgl.ShadeModel(GL_SMOOTH);
-
-		if (gl_state.fragment_program)
-		{
-			float w, h;
-			R_GetReflTexScale(&w, &h); // Probably unnecessary
-			qgl.ProgramLocalParameter4fARB(GL_VERTEX_PROGRAM_ARB, 0,
-				w, h, rs_realtime * (flowing ? -0.3f : 0.2f), rs_realtime * -0.2f);
-			qgl.ProgramLocalParameter4fARB(GL_VERTEX_PROGRAM_ARB, 1,
-				r_newrefdef.vieworg[0], r_newrefdef.vieworg[1], r_newrefdef.vieworg[2], 1.0f);
-		}
-		else
-		{
-			// Put UV coords in screen space for rendering the reflection texture.  Only need to do this when fragment programs are disabled.  It's handled in the vertex shader otherwise.
-			R_LoadReflMatrix();
-		}
-
-  		// draw reflected water layer on top of regular
-  		for (bp = fa->polys; bp; bp = bp->next)
-  		{
-			p = bp;
-			qgl.Begin(GL_TRIANGLE_FAN);
-			c_brush_polys += p->numverts / 3; // jitrspeeds
-
-			for (i = 0, v = p->verts[0]; i < p->numverts; ++i, v += VERTEXSIZE)
+			if (gl_state.fragment_program)
 			{
-				if (gl_state.fragment_program)
-				{
-					qgl.MultiTexCoord3fvARB(QGL_TEXTURE0, v); // Used for world space
-					qgl.MultiTexCoord3fvARB(QGL_TEXTURE1, v + 3); // Actual texture UV's.
-				}
-				else
-				{
-					vec3_t	vAngle;
+				float w, h;
+				R_GetReflTexScale(&w, &h); // Probably unnecessary
+				qgl.ProgramLocalParameter4fARB(GL_VERTEX_PROGRAM_ARB, 0,
+					w, h, rs_realtime * (flowing ? -0.3f : 0.2f), rs_realtime * -0.2f);
+				qgl.ProgramLocalParameter4fARB(GL_VERTEX_PROGRAM_ARB, 1,
+					r_newrefdef.vieworg[0], r_newrefdef.vieworg[1], r_newrefdef.vieworg[2], 1.0f);
+			}
+			else
+			{
+				// Put UV coords in screen space for rendering the reflection texture.  Only need to do this when fragment programs are disabled.  It's handled in the vertex shader otherwise.
+				R_LoadReflMatrix();
+			}
 
-					qgl.TexCoord3f(v[0], v[1] + CalcWave(v[0], v[1]), v[2]);
+			// draw reflected water layer on top of regular
+			for (bp = fa->polys; bp; bp = bp->next)
+			{
+				p = bp;
+				qgl.Begin(GL_TRIANGLE_FAN);
+				c_brush_polys += p->numverts / 3; // jitrspeeds
 
-					if (r_newrefdef.rdflags & RDF_UNDERWATER)
+				for (i = 0, v = p->verts[0]; i < p->numverts; ++i, v += VERTEXSIZE)
+				{
+					if (gl_state.fragment_program)
 					{
-						VectorSubtract(v, r_newrefdef.vieworg, vAngle);
-						VectorNormalize(vAngle);
-
-						if (vAngle[2] > 0.55f)
-							vAngle[2] = 0.55f;
-
-						qgl.Color4f(1.0f, 1.0f, 1.0f, 0.9f - (vAngle[2] * 1.0f));
+						qgl.MultiTexCoord3fvARB(QGL_TEXTURE0, v); // Used for world space
+						qgl.MultiTexCoord3fvARB(QGL_TEXTURE1, v + 3); // Actual texture UV's.
 					}
 					else
 					{
-						VectorSubtract(r_newrefdef.vieworg, v, vAngle);
-						VectorNormalize(vAngle);
+						vec3_t	vAngle;
 
-						if (vAngle[2] > 0.55f)
-							vAngle[2] = 0.55f;
+						qgl.TexCoord3f(v[0], v[1] + CalcWave(v[0], v[1]), v[2]);
 
-						qgl.Color4f(1.0f, 1.0f, 1.0f, 0.9f - (vAngle[2] * 1.0f));
+						if (r_newrefdef.rdflags & RDF_UNDERWATER)
+						{
+							VectorSubtract(v, r_newrefdef.vieworg, vAngle);
+							VectorNormalize(vAngle);
+
+							if (vAngle[2] > 0.55f)
+								vAngle[2] = 0.55f;
+
+							qgl.Color4f(1.0f, 1.0f, 1.0f, 0.9f - (vAngle[2] * 1.0f));
+						}
+						else
+						{
+							VectorSubtract(r_newrefdef.vieworg, v, vAngle);
+							VectorNormalize(vAngle);
+
+							if (vAngle[2] > 0.55f)
+								vAngle[2] = 0.55f;
+
+							qgl.Color4f(1.0f, 1.0f, 1.0f, 0.9f - (vAngle[2] * 1.0f));
+						}
 					}
+
+					qgl.Vertex3f(v[0], v[1], v[2]);
 				}
 
-				qgl.Vertex3f(v[0], v[1], v[2]);
+				qgl.End();
 			}
 
-			qgl.End();
-  		}
+			R_ClearReflMatrix();
 
-		R_ClearReflMatrix();
+			if (!gl_state.blend)
+				qgl.Disable(GL_BLEND);
 
-		if (!gl_state.blend)
-			qgl.Disable(GL_BLEND);
-
-		if (gl_state.fragment_program) // jitwater
-		{
-			qgl.Disable(GL_FRAGMENT_PROGRAM_ARB);
-			qgl.Disable(GL_VERTEX_PROGRAM_ARB);
+			if (gl_state.fragment_program) // jitwater
+			{
+				qgl.Disable(GL_FRAGMENT_PROGRAM_ARB);
+				qgl.Disable(GL_VERTEX_PROGRAM_ARB);
+			}
 		}
-    }
+	}
+
+	if (!reflect_water && !rendered_non_reflective_water)
+	{
+		RenderNonReflectiveWater(fa, scroll);
+	}
 }
 // jitwater ===
 
