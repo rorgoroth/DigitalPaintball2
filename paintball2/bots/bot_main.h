@@ -41,6 +41,8 @@ extern cvar_t *bot_debug;
 #define CTFTYPE_ELIM	5
 #define CTFTYPE_PONG	6
 #define CTFTYPE_TDM		7
+#define CTFTYPE_ITEMHUNT	8
+#define CTFTYPE_MANHUNT		9
 
 // memory tags to allow dynamic memory to be cleaned up
 #define	TAG_GAME	765		// clear when unloading the dll

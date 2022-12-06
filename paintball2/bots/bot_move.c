@@ -667,6 +667,8 @@ qboolean BotFollowPlayerPaths (unsigned int botindex, int msec)
 
 		return true;
 	}
+
+	return false;
 }
 
 

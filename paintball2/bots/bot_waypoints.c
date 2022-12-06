@@ -700,7 +700,7 @@ void BotAddPotentialWaypointFromPmove (player_observation_t *observation, const 
 	if (bot_remove_near_waypoints->value)
 	{
 		float sq_dist;
-		int node = ClosestWaypointToPosition(ent->s.origin, &sq_dist);
+		int node = 0;// wrong params: ClosestWaypointToPosition(ent->s.origin, &sq_dist);
 
 		if (node >= 0)
 		{
@@ -884,3 +884,26 @@ void BotUpdateWaypoints (void)
 	}
 }
 
+
+// Fills list with random waypoint positions.
+// Returns false if there are no waypoints.
+qboolean BotGetRandomWaypointPositions (const int num_requested_positions, vec3_t *out_points)
+{
+	int i;
+
+	if (g_bot_waypoints.num_points == 0)
+	{
+		return false;
+	}
+
+	for (i = 0; i < num_requested_positions; ++i)
+	{
+		int random_point = (int)nu_rand(g_bot_waypoints.num_points);
+
+		// Prefer ground points, but not guaranteed.  If it's not a ground point, try again.
+		if (g_bot_waypoints.types[random_point] != WP_TYPE_GROUND)
+			random_point = (int)nu_rand(g_bot_waypoints.num_points);
+
+		VectorCopy(g_bot_waypoints.positions[random_point], out_points[i]);
+	}
+}

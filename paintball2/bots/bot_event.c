@@ -87,7 +87,7 @@ void BotHandleRespawn (edict_t *ent)
 	{
 		if (bots.ents[bot_index] == ent)
 		{
-			bots.goals[bot_index].has_flag = false; // Double make sure the bot doesn't think it has a flag, since it just respawned.
+			bots.goals[bot_index].has_flag = false; // Double make sure the bot doesn't think it has a flag, since it just respawned. (though there is a thing where you can grab a flag while in jail, but that's not normal gameplay...)
 		}
 	}
 }

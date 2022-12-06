@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "bot_manager.h"
 #include "bot_goals.h"
 #include "bot_files.h"
+#include "bot_waypoints.h"
 
 
 #ifdef WIN32
@@ -107,6 +108,7 @@ EXPORT bot_export_t *GetBotAPI (bot_import_t *import)
 	g_bot_export.ClearObjectives = BotClearObjectives;
 	g_bot_export.PlayerDie = BotPlayerDie; // todo
 	g_bot_export.SetDefendingTeam = BotSetDefendingTeam;
+	g_bot_export.GetRandomWaypointPositions = BotGetRandomWaypointPositions;
 
 	return &g_bot_export;
 }

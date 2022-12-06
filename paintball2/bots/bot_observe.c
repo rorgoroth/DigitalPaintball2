@@ -44,7 +44,7 @@ usercmd_t g_playercmd; // used for BotCopyPlayer
 
 void BotInitObservations (const char *mapname)
 {
-	int i;
+//	int i;
 
 	// Clear out any loaded paths
 	if (g_player_paths.paths)

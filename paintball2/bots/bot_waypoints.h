@@ -80,6 +80,7 @@ extern bot_waypoints_t g_bot_waypoints;
 qboolean BotCanReachPosition (const edict_t *ent, const vec3_t pos1, const vec3_t pos2, qboolean *need_jump);
 //void BotTryAddWaypoint (const edict_t *ent, const vec3_t pos, waypoint_type_t waypoint_type);
 int ClosestWaypointToPosition (const edict_t *ent, const vec3_t pos);
+qboolean BotGetRandomWaypointPositions (const int num_requested_positions, vec3_t *out_points);
 
 // bot_astar.c
 qboolean AStarFindPathFromNodeIndexes (int start_node, int end_node, bot_waypoint_path_t *path);
