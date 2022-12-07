@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <unistd.h>
 #endif
 
+char **FS_ListFilesFilesystemOnly (const char *findname, int *numfiles, unsigned musthave, unsigned canthave, qboolean sort);
 
 /*
 =============================================================================
@@ -636,14 +637,14 @@ void FS_AddGameDirectory (char *dir)
 
 	for (j = 0; j < 1; j++)
 	{
-		if (!(pakfile_list = FS_ListFiles(dirstring, &pakfile_count, 0, 0, true)))
+		if (!(pakfile_list = FS_ListFilesFilesystemOnly(dirstring, &pakfile_count, 0, 0, true)))
 			return;
 
 		// Add each pak file from our list to the search path
-		for (i = 0; i < pakfile_count-1; i++)
+		for (i = 0; i < pakfile_count/*-1  jit old code had an extra file count*/; i++)
 		{
 			pak = FS_LoadPackFile(pakfile_list[i]);
-			free(pakfile_list[i]);  // jitpak
+			Z_Free(pakfile_list[i]);  // jitpak
 
 			if (!pak)
 				continue;
@@ -654,7 +655,7 @@ void FS_AddGameDirectory (char *dir)
 			fs_searchpaths = search;
 		}
 
-		free(pakfile_list); // jitpak
+		Z_Free(pakfile_list); // jitpak
 		Com_sprintf(dirstring, sizeof(dirstring), "%s/pakfiles/*.pak", dir); // jitpak
 	}
 }
@@ -881,7 +882,7 @@ void FS_Link_f (void)
 	l->to = CopyString(Cmd_Argv(2));
 }
 
-#define OLD_LIST_FILES_BEHAVIOR 1
+#define OLD_LIST_FILES_BEHAVIOR 0
 
 
 /*
@@ -911,11 +912,11 @@ char **FS_ListFilesFilesystemOnly (const char *findname, int *numfiles, unsigned
 	if (!nfiles)
 		return NULL;
 
-#ifdef OLD_LIST_FILES_BEHAVIOR // jit
+#if OLD_LIST_FILES_BEHAVIOR // jit
 	nfiles++; // add space for a guard
 #endif
 	*numfiles = nfiles;
-	list = malloc(sizeof(char*) * nfiles);
+	list = Z_Malloc(sizeof(char*) * nfiles);
 	memset(list, 0, sizeof(char*) * nfiles);
 	s = Sys_FindFirst(findname, musthave, canthave);
 	nfiles = 0;
@@ -924,7 +925,7 @@ char **FS_ListFilesFilesystemOnly (const char *findname, int *numfiles, unsigned
 	{
 		if (s[strlen(s)-1] != '.')
 		{
-			list[nfiles] = strdup(s);
+			list[nfiles] = CopyString(s);
 #ifdef _WIN32
 			strlwr(list[nfiles]);
 #endif
@@ -1151,10 +1152,9 @@ match:
 #define MAX_LIST_FILES 4096
 char **FS_ListFiles (const char *findname, int *numfiles, unsigned musthave, unsigned canthave, qboolean sort)
 {
-#if OLD_LIST_FILES_BEHAVIOR // old one
+#if 1// OLD_LIST_FILES_BEHAVIOR // old one
 	return FS_ListFilesFilesystemOnly(findname, numfiles, musthave, canthave, sort);
 #else
-	FS_ListFilesS
 	searchpath_t	*searchPath;
 	packfile_t		*packFile;
 	pack_t			*pack;
@@ -1166,11 +1166,13 @@ char **FS_ListFiles (const char *findname, int *numfiles, unsigned musthave, uns
 	int				i, j;
 
 	// Search through the path, one element at a time
-	for (searchPath = fs_searchpaths; searchPath; searchPath = searchPath->next){
+	for (searchPath = fs_searchpaths; searchPath; searchPath = searchPath->next)
+	{
 		if (fileCount == MAX_LIST_FILES - 1)
 			break;
 
-		if (searchPath->pack){
+		if (searchPath->pack)
+		{
 			// Search inside a pack file
 			pack = searchPath->pack;
 
@@ -1194,28 +1196,32 @@ char **FS_ListFiles (const char *findname, int *numfiles, unsigned musthave, uns
 					files[fileCount++] = CopyString(packFile->name);
 			}
 		}
-		else {
+		else
+		{
 			// Search in a directory tree
 			//sysFileList = Sys_ListFilteredFiles(searchPath->directory, findname, false, &sysNumFiles);
 			sysFileList = FS_ListFilesFilesystemOnly(findname, &sysNumFiles, musthave, canthave, false); // don't need to sort here because we sort at the end.
 
-			for (i = 0; i < sysNumFiles; i++)
+			if (sysFileList)
 			{
-				if (fileCount == MAX_LIST_FILES - 1)
-					break;
-
-				// Ignore duplicates
-				for (j = 0; j < fileCount; j++)
+				for (i = 0; i < sysNumFiles; i++)
 				{
-					if (!Q_strcasecmp(files[j], sysFileList[i]))
+					if (fileCount == MAX_LIST_FILES - 1)
 						break;
+
+					// Ignore duplicates
+					for (j = 0; j < fileCount; j++)
+					{
+						if (!Q_strcasecmp(files[j], sysFileList[i]))
+							break;
+					}
+
+					if (j == fileCount)
+						files[fileCount++] = CopyString(sysFileList[i]);
 				}
 
-				if (j == fileCount)
-					files[fileCount++] = CopyString(sysFileList[i]);
+				FS_FreeFileList(sysFileList, sysNumFiles);
 			}
-
-			FS_FreeFileList(sysFileList, sysNumFiles);
 		}
 	}
 
@@ -1253,12 +1259,12 @@ void FS_FreeFileList (char **list, int n) // jit
 	{
 		if (list[i])
 		{
-			free(list[i]);
+			Z_Free(list[i]);
 			list[i] = 0;
 		}
 	}
 
-	free(list);
+	Z_Free(list);
 }
 
 /*
@@ -1309,7 +1315,7 @@ void FS_Dir_f (void)
 
 		Com_sprintf(findname, sizeof(findname), "%s/%s", path, wildcard);
 
-		while(*tmp != 0)
+		while (*tmp != 0)
 		{
 			if (*tmp == '\\') 
 				*tmp = '/';
@@ -1324,17 +1330,19 @@ void FS_Dir_f (void)
 		{
 			int i;
 
-			for (i = 0; i < ndirs-1; i++)
+			for (i = 0; i < ndirs/*-1 jit - old code returned an extra file count*/; i++)
 			{
 				if (strrchr(dirnames[i], '/'))
 					Com_Printf("%s\n", strrchr(dirnames[i], '/') + 1);
 				else
 					Com_Printf("%s\n", dirnames[i]);
 
-				free(dirnames[i]);
+				Z_Free(dirnames[i]);
 			}
-			free(dirnames);
+
+			Z_Free(dirnames);
 		}
+
 		Com_Printf("\n");
 	};
 }
@@ -1386,7 +1394,7 @@ char *FS_NextPath (char *prevpath)
 		return fs_gamedir;
 
 	prev = fs_gamedir;
-	for (s=fs_searchpaths; s; s=s->next)
+	for (s = fs_searchpaths; s; s = s->next)
 	{
 		if (s->pack)
 			continue;

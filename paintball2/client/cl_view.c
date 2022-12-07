@@ -409,7 +409,11 @@ void CL_PrepRefresh (void)
 	}
 
 	Sys_SendKeyEvents(); // jit, moved
+#ifdef QUAKE2
+	CL_LoadClientinfo (&cl.baseclientinfo, "unnamed\\male/grunt");
+#else
 	CL_LoadClientinfo(&cl.baseclientinfo, "unnamed\\male/pb2y");
+#endif
 
 	translate_string(translated_text, sizeof(translated_text), "Loading sky...");
 	Cvar_ForceSet("cs_loadingstatus", translated_text);

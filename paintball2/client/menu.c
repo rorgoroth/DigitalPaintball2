@@ -3222,7 +3222,7 @@ static void select_begin_file_list (menu_widget_t *widget, char *findname)
 	}
 
 	widget->select_list = FS_ListFiles(Cmd_MacroExpandString(findname), &widget->select_totalitems, 0, 0, true);
-	widget->select_totalitems--;
+	// old code had an extra file. widget->select_totalitems--;
 	widget->flags |= WIDGET_FLAG_FILELIST;
 }
 
@@ -3994,7 +3994,7 @@ void M_MenuRestore_f (void)
 
 void M_Menu_LoadGame_f (void)
 {
-	Cbuf_AddText("menu loadgame\n");
+	Cbuf_AddText("menu play_loadgame\n");
 }
 
 

@@ -280,6 +280,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	// set serverinfo variable
 	Cvar_FullSet("mapname", sv.name, CVAR_SERVERINFO | CVAR_NOSET, true);
 
+#ifndef QUAKE2 // Paintball2 certified settings - don't need for Quake2
 	// T3RR0R15T: certificated server info (default settings atm)
 	//cer_maxclients			= Cvar_VariableValue("maxclients");
 	cer_elim				= Cvar_VariableValue("elim");
@@ -308,6 +309,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	} else {
 		Cvar_FullSet("sv_certificated", "0", CVAR_SERVERINFO | CVAR_NOSET, true);
 	}
+#endif
 
 	Com_Printf("-------------------------------------\n");
 }

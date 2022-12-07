@@ -916,7 +916,7 @@ void RS_ScanPathForScripts (char *dir)
 	if (!script_list)
 		return;
 
-	for (i = 0; i < script_count-1; i++)
+	for (i = 0; i < script_count/*-1 jit - old code returned an extra file count*/; i++)
 	{
 		c = COM_SkipPath(script_list[i]);
 		Com_sprintf(script, MAX_OSPATH, "scripts/%s", c);

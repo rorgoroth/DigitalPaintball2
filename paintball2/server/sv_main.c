@@ -506,7 +506,9 @@ gotnewcl:
 	sv_client = newcl;
 	edictnum = (newcl - svs.clients) + 1;
 	ent = EDICT_NUM(edictnum);
+#ifndef QUAKE2 // inuse has to be set when loading save files for Quake2, otherwise the player gets a fresh spawn and loses all weapons, but we want to keep this fix for paintball2
 	ent->inuse = false; // jit - sometimes we run into strange situations where a client reconnects, replaces his own slot, and inuse is true, causing things to execute that shouldn't before the connection finishes.
+#endif
 	newcl->edict = ent;
 	newcl->challenge = challenge; // save challenge for checksumming
 #ifdef USE_DOWNLOAD3 // jitdownload
@@ -1261,7 +1263,6 @@ void SV_PrepWorldFrame (void)
 		// events only last for a single message
 		ent->s.event = 0;
 	}
-
 }
 
 

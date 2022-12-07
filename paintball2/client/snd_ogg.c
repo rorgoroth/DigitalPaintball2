@@ -264,7 +264,7 @@ void OGG_LoadFileList(void)
 	/* Get file list. */
 	list = FS_ListFiles(va("%s/%s/*.ogg", FS_Gamedir(), OGG_DIR), &ogg_numfiles, 0,
 	    SFF_SUBDIR | SFF_HIDDEN | SFF_SYSTEM, false);
-	ogg_numfiles--;
+	// old code had an extra file count: ogg_numfiles--;
 
 	/* Check if there are posible Ogg files. */
 	if (list == NULL)
@@ -276,14 +276,14 @@ void OGG_LoadFileList(void)
 	/* Add valid Ogg Vorbis file to the list. */
 	for (i = 0, j = 0; i < ogg_numfiles; i++) {
 		if (!OGG_Check(list[i])) {
-			free(list[i]);
+			Z_Free(list[i]);
 			continue;
 		}
 		ogg_filelist[j++] = list[i];
 	}
 
 	/* Free the file list. */
-	free(list);
+	Z_Free(list);
 
 	/* Adjust the list size (remove space for invalid music files). */
 	ogg_numfiles = j;

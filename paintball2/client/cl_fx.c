@@ -2372,18 +2372,21 @@ void CL_EntityEvent (entity_state_t *ent)
 		CL_PlayFootstep(ent); // jitsound
 		break;
 	case EV_FALL:
-	case EV_FALLFAR:
+#ifdef QUAKE2
+		S_StartSound(NULL, ent->number, CHAN_AUTO, S_RegisterSound("*fall2.wav"), 1, ATTN_NORM, 0);
+#else
 		S_StartSound(NULL, ent->number, CHAN_AUTO, S_RegisterSound("player/land1.wav"), 1.0f, ATTN_NORM, 0);
-		CL_PlayFootstep(ent); // jitsound
-		break;
-	/*case EV_FALL:
-		S_StartSound (NULL, ent->number, CHAN_AUTO, S_RegisterSound("*fall2.wav"), 1, ATTN_NORM, 0);
+#endif
 		CL_PlayFootstep(ent); // jitsound
 		break;
 	case EV_FALLFAR:
-		S_StartSound (NULL, ent->number, CHAN_AUTO, S_RegisterSound("*fall1.wav"), 1, ATTN_NORM, 0);
+#ifdef QUAKE2
+		S_StartSound(NULL, ent->number, CHAN_AUTO, S_RegisterSound("*fall1.wav"), 1, ATTN_NORM, 0);
+#else
+		S_StartSound(NULL, ent->number, CHAN_AUTO, S_RegisterSound("player/land1.wav"), 1.0f, ATTN_NORM, 0);
+#endif
 		CL_PlayFootstep(ent); // jitsound
-		break;*/
+		break;
 	}
 }
 

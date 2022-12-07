@@ -230,46 +230,48 @@ SV_CopySaveGame
 */
 void SV_CopySaveGame (char *src, char *dst)
 {
-	// jitsave -- we don't need to save games as there's no single player.
-	//char	name[MAX_OSPATH], name2[MAX_OSPATH];
-	//int		l, len;
-	//char	*found;
+	// jitsave -- we don't need to save games as there's no single player.  Only save for Quake2 version of engine.
+#ifdef QUAKE2
+	char	name[MAX_OSPATH], name2[MAX_OSPATH];
+	int		l, len;
+	char	*found;
 
-	//Com_DPrintf("SV_CopySaveGame(%s, %s)\n", src, dst);
+	Com_DPrintf("SV_CopySaveGame(%s, %s)\n", src, dst);
 
-	//SV_WipeSavegame (dst);
+	SV_WipeSavegame (dst);
 
-	//// copy the savegame over
-	//Com_sprintf (name, sizeof(name), "%s/save/%s/server.ssv", FS_Gamedir(), src);
-	//Com_sprintf (name2, sizeof(name2), "%s/save/%s/server.ssv", FS_Gamedir(), dst);
-	//FS_CreatePath (name2);
-	//Q_CopyFile (name, name2);
+	// copy the savegame over
+	Com_sprintf (name, sizeof(name), "%s/save/%s/server.ssv", FS_Gamedir(), src);
+	Com_sprintf (name2, sizeof(name2), "%s/save/%s/server.ssv", FS_Gamedir(), dst);
+	FS_CreatePath (name2);
+	Q_CopyFile (name, name2);
 
-	//Com_sprintf (name, sizeof(name), "%s/save/%s/game.ssv", FS_Gamedir(), src);
-	//Com_sprintf (name2, sizeof(name2), "%s/save/%s/game.ssv", FS_Gamedir(), dst);
-	//Q_CopyFile (name, name2);
+	Com_sprintf (name, sizeof(name), "%s/save/%s/game.ssv", FS_Gamedir(), src);
+	Com_sprintf (name2, sizeof(name2), "%s/save/%s/game.ssv", FS_Gamedir(), dst);
+	Q_CopyFile (name, name2);
 
-	//Com_sprintf (name, sizeof(name), "%s/save/%s/", FS_Gamedir(), src);
-	//len = strlen(name);
-	//Com_sprintf (name, sizeof(name), "%s/save/%s/*.sav", FS_Gamedir(), src);
-	//found = Sys_FindFirst(name, 0, 0 );
-	//while (found)
-	//{
-	//	strcpy (name+len, found+len);
+	Com_sprintf (name, sizeof(name), "%s/save/%s/", FS_Gamedir(), src);
+	len = strlen(name);
+	Com_sprintf (name, sizeof(name), "%s/save/%s/*.sav", FS_Gamedir(), src);
+	found = Sys_FindFirst(name, 0, 0 );
+	while (found)
+	{
+		strcpy (name+len, found+len);
 
-	//	Com_sprintf (name2, sizeof(name2), "%s/save/%s/%s", FS_Gamedir(), dst, found+len);
-	//	Q_CopyFile (name, name2);
+		Com_sprintf (name2, sizeof(name2), "%s/save/%s/%s", FS_Gamedir(), dst, found+len);
+		Q_CopyFile (name, name2);
 
-	//	// change sav to sv2
-	//	l = strlen(name);
-	//	strcpy (name+l-3, "sv2");
-	//	l = strlen(name2);
-	//	strcpy (name2+l-3, "sv2");
-	//	Q_CopyFile (name, name2);
+		// change sav to sv2
+		l = strlen(name);
+		strcpy (name+l-3, "sv2");
+		l = strlen(name2);
+		strcpy (name2+l-3, "sv2");
+		Q_CopyFile (name, name2);
 
-	//	found = Sys_FindNext( 0, 0 );
-	//}
-	//Sys_FindClose ();
+		found = Sys_FindNext( 0, 0 );
+	}
+	Sys_FindClose ();
+#endif
 }
 
 
@@ -368,7 +370,7 @@ void SV_WriteServerFile (qboolean autosave)
 	}
 	else
 	{	// autosaved
-//		Com_sprintf (comment, sizeof(comment), "ENTERING %s", sv.configstrings[CS_NAME]);
+		Com_sprintf (comment, sizeof(comment), "ENTERING %s", sv.configstrings[CS_NAME]);
 	}
 
 	fwrite(comment, 1, sizeof(comment), f);
@@ -415,44 +417,46 @@ void SV_ReadServerFile (void)
 	FILE	*f;
 	char	name[MAX_OSPATH], string[128];
 	char	comment[32];
-	char	mapcmd[MAX_TOKEN_CHARS];
+	char	mapcmd[MAX_TOKEN_CHARS_SAVE];
 
 	Com_DPrintf("SV_ReadServerFile()\n");
 
-	Com_sprintf (name, sizeof(name), "%s/save/current/server.ssv", FS_Gamedir());
-	f = fopen (name, "rb");
+	Com_sprintf(name, sizeof(name), "%s/save/current/server.ssv", FS_Gamedir());
+	f = fopen(name, "rb");
+
 	if (!f)
 	{
-		Com_Printf ("Couldn't read %s.\n", name);
+		Com_Printf("Couldn't read %s.\n", name);
 		return;
 	}
+
 	// read the comment field
-	FS_Read (comment, sizeof(comment), f);
+	FS_Read(comment, sizeof(comment), f);
 
 	// read the mapcmd
-	FS_Read (mapcmd, sizeof(mapcmd), f);
+	FS_Read(mapcmd, sizeof(mapcmd), f);
 
 	// read all CVAR_LATCH cvars
 	// these will be things like coop, skill, deathmatch, etc
 	while (1)
 	{
-		if (!fread (name, 1, sizeof(name), f))
+		if (!fread(name, 1, sizeof(name), f))
 			break;
-		FS_Read (string, sizeof(string), f);
-		Com_DPrintf ("Set %s = %s\n", name, string);
-		Cvar_ForceSet (name, string);
+		FS_Read(string, sizeof(string), f);
+		Com_DPrintf("Set %s = %s\n", name, string);
+		Cvar_ForceSet(name, string);
 	}
 
-	fclose (f);
+	fclose(f);
 
 	// start a new game fresh with new cvars
-	SV_InitGame ();
+	SV_InitGame();
 
-	strcpy (svs.mapcmd, mapcmd);
+	strcpy(svs.mapcmd, mapcmd);
 
 	// read game state
-	Com_sprintf (name, sizeof(name), "%s/save/current/game.ssv", FS_Gamedir());
-	ge->ReadGame (name);
+	Com_sprintf(name, sizeof(name), "%s/save/current/game.ssv", FS_Gamedir());
+	ge->ReadGame(name);
 }
 
 
@@ -672,7 +676,7 @@ void SV_Loadgame_f (void)
 		return;
 	}
 
-	fclose (f);
+	fclose(f);
 	SV_CopySaveGame(Cmd_Argv(1), "current");
 	SV_ReadServerFile();
 

@@ -422,14 +422,20 @@ void EmitWaterPolys (msurface_t *fa)
 			{
 				best_reflection_dist = reflection_dist;
 				best_reflection_index = g_active_refl;
-				reflect_water = true;
-				break;
+
+				// Only reflect water if height is around 32 units or less from other reflective water height.
+				if (best_reflection_dist < 33)
+				{
+					reflect_water = true;
+				}
 			}
 		}
 
 		// if we found a reflective surface correctly, then go ahead and draw it
 		if (reflect_water)
 		{
+			g_active_refl = best_reflection_index;
+
 			if (gl_state.fragment_program)
 			{
 				qgl.Enable(GL_VERTEX_PROGRAM_ARB);
