@@ -1328,37 +1328,66 @@ void SCR_ExecuteLayoutString (char *s) // jit: optimized somewhat
 			{	// draw a deathmatch client block
 				int		score, ping, time;
 
+				token = COM_Parse(&s);
+				x = viddef.width * 0.5 - (160 + atoi(token)) * hudscale; // jithudscale
 				token = COM_Parse (&s);
-				x = viddef.width*0.5 - 160 + atoi(token);
-				token = COM_Parse (&s);
-				y = viddef.height*0.5 - 120 + atoi(token);
-				SCR_AddDirtyPoint (x, y);
-				SCR_AddDirtyPoint (x+159, y+31);
-
-				token = COM_Parse (&s);
+				y = viddef.height * 0.5 - (120 + atoi(token)) * hudscale; // jithudscale
+				SCR_AddDirtyPoint(x, y);
+				SCR_AddDirtyPoint(x + 159, y + 31);
+				token = COM_Parse(&s);
 				value = atoi(token);
 				if (value >= MAX_CLIENTS || value < 0)
 					Com_Error (ERR_DROP, "client >= MAX_CLIENTS");
 				ci = &cl.clientinfo[value];
 
-				token = COM_Parse (&s);
+				token = COM_Parse(&s);
 				score = atoi(token);
 
-				token = COM_Parse (&s);
+				token = COM_Parse(&s);
 				ping = atoi(token);
 
-				token = COM_Parse (&s);
+				token = COM_Parse(&s);
 				time = atoi(token);
 
-				DrawAltString (x+32, y, ci->name);
-				re.DrawString (x+32, y+8,  "Score: ");
-				DrawAltString (x+32+7*8, y+8,  va("%i", score));
-				re.DrawString (x+32, y+16, va("Ping:  %i", ping));
-				re.DrawString (x+32, y+24, va("Time:  %i", time));
+				DrawAltString(x + 32 * hudscale, y, ci->name);
+				re.DrawString(x + 32 * hudscale, y + 8 * hudscale,  "Score: ");
+				DrawAltString(x + 32 * hudscale + 7 * 8 * hudscale, y + 8 * hudscale, va("%i", score));
+				re.DrawString(x + 32 * hudscale, y + 16 * hudscale, va("Ping:  %i", ping));
+				re.DrawString(x + 32 * hudscale, y + 24 * hudscale, va("Time:  %i", time));
 
 				if (!ci->icon)
 					ci = &cl.baseclientinfo;
-				re.DrawPic (x, y, ci->iconname);
+				re.DrawPic(x, y, ci->iconname);
+				continue;
+			}
+			//if (Q_streq(token, "ctf"))
+			else if (token[1] == 't')
+			{	// draw a ctf client block
+				int		score, ping;
+				char	block[80];
+
+				token = COM_Parse(&s);
+				x = viddef.width * 0.5 - (160 + atoi(token)) * hudscale;
+				token = COM_Parse(&s);
+				y = viddef.height * 0.5 - (120 + atoi(token)) * hudscale;
+				SCR_AddDirtyPoint(x, y);
+				SCR_AddDirtyPoint(x + 159, y + 31);
+				token = COM_Parse(&s);
+				value = atoi(token);
+				if (value >= MAX_CLIENTS || value < 0)
+					Com_Error (ERR_DROP, "client >= MAX_CLIENTS");
+				ci = &cl.clientinfo[value];
+				token = COM_Parse(&s);
+				score = atoi(token);
+				token = COM_Parse (&s);
+				ping = atoi(token);
+				if (ping > 999)
+					ping = 999;
+				sprintf(block, "%3d %3d %-12.12s", score, ping, ci->name);
+				if (value == cl.playernum)
+					DrawAltString(x, y, block);
+				else
+					re.DrawString(x, y, block);
 				continue;
 			}
 			//if (Q_streq(token, "cstring2"))
@@ -1370,12 +1399,12 @@ void SCR_ExecuteLayoutString (char *s) // jit: optimized somewhat
 				DrawHUDString(x, y, 320, 0, "%c%c%s", SCHAR_COLOR, ']', token); // jittext
 				//re.DrawString (x, y, local_s); // jittext
 				continue;
-			}			
+			}
 			//if (Q_streq(token, "cstring"))
 			else
 			{
 				token = COM_Parse (&s);
-				DrawHUDString (x, y, 320, 0,token);
+				DrawHUDString(x, y, 320, 0, token);
 				continue;
 			}
 		}
@@ -1416,15 +1445,15 @@ void SCR_ExecuteLayoutString (char *s) // jit: optimized somewhat
 			//if (Q_streq(token, "pic"))
 			else
 			{	// draw a pic from a stat number
-				token = COM_Parse (&s);
+				token = COM_Parse(&s);
 				value = cl.frame.playerstate.stats[atoi(token)];
 				if (value >= MAX_IMAGES)
 					Com_Error (ERR_DROP, "Pic >= MAX_IMAGES");
 				if (cl.configstrings[CS_IMAGES+value])
 				{
-					SCR_AddDirtyPoint (x, y);
-					SCR_AddDirtyPoint (x+23*hudscale, y+23*hudscale);
-					re.DrawPic (x, y, cl.configstrings[CS_IMAGES+value]);
+					SCR_AddDirtyPoint(x, y);
+					SCR_AddDirtyPoint(x + 23 * hudscale, y + 23 * hudscale);
+					re.DrawPic(x, y, cl.configstrings[CS_IMAGES + value]);
 				}
 				continue;
 			}
@@ -1433,9 +1462,9 @@ void SCR_ExecuteLayoutString (char *s) // jit: optimized somewhat
 		//if (Q_streq(token, "num"))
 		if (token[0]=='n')
 		{	// draw a number
-			token = COM_Parse (&s);
-			width = atoi(token);
-			token = COM_Parse (&s);
+			token = COM_Parse(&s);
+			width = atoi(token) * hudscale; // jithudscale
+			token = COM_Parse(&s);
 			value = cl.frame.playerstate.stats[atoi(token)];
 			SCR_DrawField(x, y, 0, width, value);
 			continue;
@@ -1495,7 +1524,7 @@ void SCR_ExecuteLayoutString (char *s) // jit: optimized somewhat
 			if (token[1]=='l')
 			{
 				token = COM_Parse (&s);
-				x = atoi(token)*hudscale; // jithudscale
+				x = atoi(token) * hudscale; // jithudscale
 			}
 			else if (token[1]=='r')
 			{
@@ -1533,95 +1562,27 @@ void SCR_ExecuteLayoutString (char *s) // jit: optimized somewhat
 			//token = COM_Parse (&s);
 			continue;
 		}
-		/*
-				if (Q_streq(token, "xl"))
-		{
-			token = COM_Parse (&s);
-			x = atoi(token);
-			continue;
-		}
-		if (Q_streq(token, "xr"))
-		{
-			token = COM_Parse (&s);
-			x = viddef.width + atoi(token);
-			continue;
-		}
-		if (Q_streq(token, "xv"))
-		{
-			token = COM_Parse (&s);
-			x = viddef.width*0.5 - 160 + atoi(token);
-			continue;
-		}
 
-		if (Q_streq(token, "yt"))
+		if (token[0] == 'r')
 		{
-			token = COM_Parse (&s);
-			y = atoi(token);
-			continue;
-		}
-		if (Q_streq(token, "yb"))
-		{
-			token = COM_Parse (&s);
-			y = viddef.height + atoi(token);
-			continue;
-		}
-		if (Q_streq(token, "yv"))
-		{
-			token = COM_Parse (&s);
-			y = viddef.height*0.5 - 120 + atoi(token);
-			continue;
-		}
-		  if (Q_streq(token, "rnum"))
-		{	// armor number
-			int		color;
+			//if (Q_streq(token, "rnum"))
+			{	// armor number
+				int		color;
 
-			width = 3;
-			value = cl.frame.playerstate.stats[STAT_ARMOR];
-			if (value < 1)
+				width = 3;
+				value = cl.frame.playerstate.stats[STAT_ARMOR];
+				if (value < 1)
+					continue;
+
+				color = 0;	// green
+
+				if (cl.frame.playerstate.stats[STAT_FLASHES] & 2)
+					re.DrawPic(x, y, "field_3");
+
+				SCR_DrawField(x, y, color, width, value);
 				continue;
-
-			color = 0;	// green
-
-			if (cl.frame.playerstate.stats[STAT_FLASHES] & 2)
-				re.DrawPic (x, y, "field_3");
-
-			SCR_DrawField (x, y, color, width, value);
-			continue;
-		}*/
-		/*		if (Q_streq(token, "ctf"))
-		{	// draw a ctf client block
-			int		score, ping;
-			char	block[80];
-
-			token = COM_Parse (&s);
-			x = viddef.width*0.5 - 160 + atoi(token);
-			token = COM_Parse (&s);
-			y = viddef.height*0.5 - 120 + atoi(token);
-			SCR_AddDirtyPoint (x, y);
-			SCR_AddDirtyPoint (x+159, y+31);
-
-			token = COM_Parse (&s);
-			value = atoi(token);
-			if (value >= MAX_CLIENTS || value < 0)
-				Com_Error (ERR_DROP, "client >= MAX_CLIENTS");
-			ci = &cl.clientinfo[value];
-
-			token = COM_Parse (&s);
-			score = atoi(token);
-
-			token = COM_Parse (&s);
-			ping = atoi(token);
-			if (ping > 999)
-				ping = 999;
-
-			sprintf(block, "%3d %3d %-12.12s", score, ping, ci->name);
-
-			if (value == cl.playernum)
-				DrawAltString (x, y, block);
-			else
-				re.DrawString (x, y, block);
-			continue;
-		}*/
+			}
+		}
 	}
 }
 

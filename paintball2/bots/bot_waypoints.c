@@ -906,4 +906,7 @@ qboolean BotGetRandomWaypointPositions (const int num_requested_positions, vec3_
 
 		VectorCopy(g_bot_waypoints.positions[random_point], out_points[i]);
 	}
+
+	return true;
 }
+

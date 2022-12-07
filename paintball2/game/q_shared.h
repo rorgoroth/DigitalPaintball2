@@ -1209,6 +1209,9 @@ typedef enum
 #define	STAT_ID					30 // Player ID
 #define STAT_UNUSED				31
 
+// Quake2 stuff for pb2q2 support
+#define	STAT_ARMOR				5
+
 #define	MAX_STATS				32
 
 

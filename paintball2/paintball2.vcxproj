@@ -129,6 +129,7 @@
     <IntDir Condition="'$(Configuration)|$(Platform)'=='PB2Q2 - Debug|Win32'">..\debug/q2exe/\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='PB2Q2 - Debug|Win32'">true</LinkIncremental>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">paintball2</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='PB2Q2 - Release|Win32'">pb2q2</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
@@ -362,7 +363,7 @@
     <Link>
       <AdditionalOptions>/MACHINE:I386 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>winmm.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>e:\games\quake2\pbq2.exe</OutputFile>
+      <OutputFile>e:\games\quake2\pb2q2.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ProgramDatabaseFile>..\release/exe/paintball2.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
@@ -405,7 +406,7 @@
     <Link>
       <AdditionalOptions>/MACHINE:I386 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>winmm.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>c:\games\quake2\pb2q2.exe</OutputFile>
+      <OutputFile>e:\games\quake2\pb2q2.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>..\debug/exe/paintball2.pdb</ProgramDatabaseFile>
@@ -415,6 +416,7 @@
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
+      <IgnoreSpecificDefaultLibraries>LIBCMT;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

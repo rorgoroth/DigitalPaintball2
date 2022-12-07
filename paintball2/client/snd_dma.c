@@ -167,11 +167,14 @@ void S_Init (void)
 
 		s_resamplequality = Cvar_Get("s_resamplequality", "2", CVAR_ARCHIVE);
 #ifdef QUAKE2
+		s_resamplevolume = Cvar_Get("s_resamplevolume", "1", 0);
+		s_nojump = Cvar_Get("s_nojump", "0", CVAR_ARCHIVE);
+#else
+		// Paintball 2 has reasonable sound volume for new 48khz sounds, so old, excessively loud resampled stuff gets its volume dropped.
 		s_resamplevolume = Cvar_Get("s_resamplevolume", "0.35", 0);
-#else // Paintball 2 has reasonable sound volume for new 48khz sounds, so old, excessively loud resampled stuff gets its volume dropped.
-		s_resamplevolume = Cvar_Get("s_resamplevolume", "0.35", 0);
-#endif
+		// Disable jump grunts by default in paintball 2
 		s_nojump = Cvar_Get("s_nojump", "1", CVAR_ARCHIVE);
+#endif
 		s_disableonalttab = Cvar_Get("s_disableonalttab", "1", 0);
 		s_preload = Cvar_Get("s_preload", "1", 0);
 		// jitsound ===

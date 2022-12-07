@@ -2539,6 +2539,12 @@ static void M_PushMenuScreen (menu_screen_t *menu, qboolean samelevel)
 {
 	MENU_SOUND_OPEN;
 
+	// Pause if in single player.
+	if (Cvar_VariableValue("maxclients") == 1 && Com_ServerState())
+	{
+		Cvar_Set("paused", "1");
+	}
+
 	if (m_menudepth < MAX_MENU_SCREENS)
 	{
 		refresh_menu_screen(menu); // screen size may have changed or something, refresh it.
@@ -3986,6 +3992,12 @@ void M_MenuRestore_f (void)
 }
 
 
+void M_Menu_LoadGame_f (void)
+{
+	Cbuf_AddText("menu loadgame\n");
+}
+
+
 void M_CreateTemporaryBackground()
 {
 	m_temporary_background = re.DrawFindPic(cl_menuback->string);
@@ -4009,6 +4021,7 @@ void M_Init (void)
 	Cmd_AddCommand("dialog", M_DialogBox_f);
 	Cmd_AddCommand("menu_store", M_MenuStore_f);
 	Cmd_AddCommand("menu_restore", M_MenuRestore_f);
+	Cmd_AddCommand("menu_loadgame", M_Menu_LoadGame_f);
 	m_initialized = true;
 }
 

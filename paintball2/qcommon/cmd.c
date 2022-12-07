@@ -460,8 +460,15 @@ void Cmd_Exec_f (void)
 
 	if (!f)
 	{
-		Com_Printf("Couldn't exec %s.\n", configfile);
-		return;
+		// Quake2 has critical config files stored in the pak files that must be loaded not from the configs dir.  Use this as a fallback.
+#ifdef QUAKE2
+		len = FS_LoadFile(Cmd_Argv(1), (void **)&f);
+		if (!f)
+#endif
+		{
+			Com_Printf("Couldn't exec %s.\n", configfile);
+			return;
+		}
 	}
 
 	if (!Q_streq(Cmd_Argv(1), "z"))

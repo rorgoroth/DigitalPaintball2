@@ -9,9 +9,16 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PB2Q2 - Release|Win32'">
-    <LocalDebuggerCommand>e:\games\quake2\pbq2</LocalDebuggerCommand>
+    <LocalDebuggerCommand>e:\games\quake2\pb2q2</LocalDebuggerCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PB2Q2 - Release|Win32'">
+    <LocalDebuggerWorkingDirectory>e:\games\quake2</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PB2Q2 - Debug|Win32'">
+    <LocalDebuggerCommand>e:\games\quake2\pb2q2</LocalDebuggerCommand>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PB2Q2 - Debug|Win32'">
     <LocalDebuggerWorkingDirectory>e:\games\quake2</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>

@@ -5036,7 +5036,7 @@ void R_Register(void)
 	gl_ext_compiled_vertex_array = ri.Cvar_Get("gl_ext_compiled_vertex_array", "1", CVAR_ARCHIVE);
 	gl_ext_texture_compression = ri.Cvar_Get("gl_ext_texture_compression", "0", CVAR_ARCHIVE); // Heffo - ARB Texture Compression
 	gl_screenshot_jpeg = ri.Cvar_Get("gl_screenshot_jpeg", "1", CVAR_ARCHIVE);					// Heffo - JPEG Screenshots
-	gl_screenshot_jpeg_quality = ri.Cvar_Get("gl_screenshot_jpeg_quality", "90", CVAR_ARCHIVE);	// Heffo - JPEG Screenshots
+	gl_screenshot_jpeg_quality = ri.Cvar_Get("gl_screenshot_jpeg_quality", "96", CVAR_ARCHIVE);	// Heffo - JPEG Screenshots
 	gl_stainmaps = ri.Cvar_Get("gl_stainmaps", "1", CVAR_ARCHIVE);	// stainmaps
 	gl_motionblur = ri.Cvar_Get("gl_motionblur", "0", CVAR_ARCHIVE);	// motionblur
 	vid_gamma_hw = ri.Cvar_Get("vid_gamma_hw", "0", CVAR_ARCHIVE);		// hardware gamma

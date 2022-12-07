@@ -743,6 +743,11 @@ void FS_ExecConfig (void)
 		Com_sprintf(name, sizeof(name), "%s/%s/configs/config.cfg", 
 					fs_basedir->string, BASEDIRNAME);
 
+#ifdef QUAKE2
+	// Quake2 NEEDS default.cfg to be executed in order to alias things for starting the game.
+	Cbuf_AddText("exec default.cfg\n");
+	Cbuf_AddText("exec config.cfg\n");
+#else
 	if (Sys_FindFirst(name, 0, SFF_SUBDIR | SFF_HIDDEN | SFF_SYSTEM))
 	{
 		Cbuf_AddText("exec config.cfg\n");
@@ -751,6 +756,7 @@ void FS_ExecConfig (void)
 	{
 		Cbuf_AddText("exec default.cfg\n");
 	}
+#endif
 
 	Sys_FindClose();
 }
@@ -875,10 +881,13 @@ void FS_Link_f (void)
 	l->to = CopyString(Cmd_Argv(2));
 }
 
+#define OLD_LIST_FILES_BEHAVIOR 1
+
+
 /*
-** FS_ListFiles
+** FS_ListFiles - jit - renamed to be filesystem only
 */
-char **FS_ListFiles (const char *findname, int *numfiles, unsigned musthave, unsigned canthave, qboolean sort)
+char **FS_ListFilesFilesystemOnly (const char *findname, int *numfiles, unsigned musthave, unsigned canthave, qboolean sort)
 {
 	char *s;
 	int nfiles = 0;
@@ -902,7 +911,9 @@ char **FS_ListFiles (const char *findname, int *numfiles, unsigned musthave, uns
 	if (!nfiles)
 		return NULL;
 
+#ifdef OLD_LIST_FILES_BEHAVIOR // jit
 	nfiles++; // add space for a guard
+#endif
 	*numfiles = nfiles;
 	list = malloc(sizeof(char*) * nfiles);
 	memset(list, 0, sizeof(char*) * nfiles);
@@ -927,6 +938,311 @@ char **FS_ListFiles (const char *findname, int *numfiles, unsigned musthave, uns
 	qsort(list, nfiles, sizeof(char *), SortList);
 	return list;
 }
+
+
+
+/*
+ =================
+ Q_MatchFilterAfterStar
+
+ Like Q_MatchFilter, but match filter against any final segment of text
+ =================
+*/
+static qboolean Q_MatchFilterAfterStar (const char *text, const char *filter, qboolean caseSensitive)
+{
+	const char	*t = text;
+	const char	*f = filter;
+	char		c1, c2;
+
+	while ((c1 = *f++) == '?' || c1 == '*')
+	{
+		if (c1 == '?' && *t++ == '\0')
+			return false;
+	}
+
+	if (c1 == '\0')
+		return true;
+
+	if (c1 == '\\')
+		c2 = *f;
+	else
+		c2 = c1;
+
+	while (1)
+	{
+		if (caseSensitive)
+		{
+			if (c1 == '[' || *t == c2)
+			{
+				if (Q_MatchFilter(t, f - 1, caseSensitive))
+					return true;
+			}
+		}
+		else
+		{
+			if (c1 == '[' || tolower(*t) == tolower(c2))
+			{
+				if (Q_MatchFilter(t, f - 1, caseSensitive))
+					return true;
+			}
+		}
+
+		if (*t++ == '\0')
+			return false;
+	}
+}
+
+
+/*
+ =================
+ Q_MatchFilter
+
+ Matches the filter against text.
+ Returns true if matches, false otherwise.
+
+ A match means the entire text is used up in matching.
+
+ In the filter string, '*' matches any sequence of characters, '?'
+ matches any character, '[SET]' matches any character in the specified
+ set, '[!SET]' matches any character not in the specified set.
+
+ A set is composed of characters or ranges. A range looks like character
+ hyphen character (as in 0-9 or A-Z).
+ [0-9a-zA-Z_] is the set of characters allowed in C identifiers.
+ Any other character in the filter must be matched exactly.
+
+ To suppress the special syntactic significance of any of '[]*?!-\', and
+ match the character exactly, precede it with a '\'.
+ =================
+*/
+qboolean Q_MatchFilter (const char *text, const char *filter, qboolean caseSensitive)
+{
+	const char	*t = text;
+	const char	*f = filter;
+	char		c1, c2, start, end;
+	qboolean	invert;
+
+	while ((c1 = *f++) != '\0')
+	{
+		switch (c1){
+		case '?':
+			if (*t == '\0')
+				return false;
+			else
+				++t;
+
+			break;
+		case '\\':
+			if (caseSensitive)
+			{
+				if (*f++ != *t++)
+					return false;
+			}
+			else
+			{
+				if (tolower(*f++) != tolower(*t++))
+					return false;
+			}
+
+			break;
+		case '*':
+			return Q_MatchFilterAfterStar(t, f, caseSensitive);
+
+		case '[':
+			c2 = *t++;
+			if (!c2)
+				return false;
+
+			invert = (*f == '!');
+			if (invert)
+				f++;
+
+			c1 = *f++;
+			while (1){
+				start = c1;
+				end = c1;
+
+				if (c1 == '\\')
+				{
+					start = *f++;
+					end = start;
+				}
+				if (c1 == '\0')
+					return false;
+
+				c1 = *f++;
+				if (c1 == '-' && *f != ']')
+				{
+					end = *f++;
+					if (end == '\\')
+						end = *f++;
+					if (end == '\0')
+						return false;
+
+					c1 = *f++;
+				}
+
+				if (caseSensitive)
+				{
+					if (c2 >= start && c2 <= end)
+						goto match;
+				}
+				else
+				{
+					if (tolower(c2) >= tolower(start) && tolower(c2) <= tolower(end))
+						goto match;
+				}
+
+				if (c1 == ']')
+					break;
+			}
+
+			if (!invert)
+				return false;
+
+			break;
+
+match:
+			while (c1 != ']')
+			{
+				if (c1 == '\0')
+					return false;
+
+				c1 = *f++;
+				if (c1 == '\0')
+					return false;
+				else if (c1 == '\\')
+					++f;
+			}
+
+			if (invert)
+				return false;
+
+			break;
+
+		default:
+			if (caseSensitive)
+			{
+				if (c1 != *t++)
+					return false;
+			}
+			else
+			{
+				if (tolower(c1) != tolower(*t++))
+					return false;
+			}
+
+			break;
+		}
+	}
+
+	return (*t == '\0');
+}
+
+
+/*
+ =================
+ FS_ListFiles -- jit -modified Quake2Evolved FS_ListFilteredFiles
+
+ Returns a list of files and subdirectories that match the given filter.
+ The returned list can optionally be sorted.
+ =================
+*/
+#define MAX_LIST_FILES 4096
+char **FS_ListFiles (const char *findname, int *numfiles, unsigned musthave, unsigned canthave, qboolean sort)
+{
+#if OLD_LIST_FILES_BEHAVIOR // old one
+	return FS_ListFilesFilesystemOnly(findname, numfiles, musthave, canthave, sort);
+#else
+	FS_ListFilesS
+	searchpath_t	*searchPath;
+	packfile_t		*packFile;
+	pack_t			*pack;
+	char			**sysFileList;
+	int				sysNumFiles;
+	char			**fileList;
+	char			*files[MAX_LIST_FILES];
+	int				fileCount = 0;
+	int				i, j;
+
+	// Search through the path, one element at a time
+	for (searchPath = fs_searchpaths; searchPath; searchPath = searchPath->next){
+		if (fileCount == MAX_LIST_FILES - 1)
+			break;
+
+		if (searchPath->pack){
+			// Search inside a pack file
+			pack = searchPath->pack;
+
+			for (i = 0, packFile = pack->files; i < pack->numfiles; i++, packFile++)
+			{
+				if (fileCount == MAX_LIST_FILES - 1)
+					break;
+
+				// Match filter
+				if (!Q_MatchFilter(packFile->name, findname, false))
+					continue;
+
+				// Ignore duplicates
+				for (j = 0; j < fileCount; j++)
+				{
+					if (!Q_strcasecmp(files[j], packFile->name))
+						break;
+				}
+
+				if (j == fileCount)
+					files[fileCount++] = CopyString(packFile->name);
+			}
+		}
+		else {
+			// Search in a directory tree
+			//sysFileList = Sys_ListFilteredFiles(searchPath->directory, findname, false, &sysNumFiles);
+			sysFileList = FS_ListFilesFilesystemOnly(findname, &sysNumFiles, musthave, canthave, false); // don't need to sort here because we sort at the end.
+
+			for (i = 0; i < sysNumFiles; i++)
+			{
+				if (fileCount == MAX_LIST_FILES - 1)
+					break;
+
+				// Ignore duplicates
+				for (j = 0; j < fileCount; j++)
+				{
+					if (!Q_strcasecmp(files[j], sysFileList[i]))
+						break;
+				}
+
+				if (j == fileCount)
+					files[fileCount++] = CopyString(sysFileList[i]);
+			}
+
+			FS_FreeFileList(sysFileList, sysNumFiles);
+		}
+	}
+
+	if (!fileCount)
+	{
+		*numfiles = 0;
+		return NULL;
+	}
+
+	// Sort the list if needed
+	if (sort)
+		qsort(files, fileCount, sizeof(char *), SortList);
+
+	// Copy the list
+	fileList = Z_Malloc((fileCount + 1) * sizeof(char *));
+
+	for (i = 0; i < fileCount; i++)
+		fileList[i] = files[i];
+
+	fileList[i] = NULL;
+
+	*numfiles = fileCount;
+
+	return fileList;
+#endif
+}
+
 
 
 void FS_FreeFileList (char **list, int n) // jit
