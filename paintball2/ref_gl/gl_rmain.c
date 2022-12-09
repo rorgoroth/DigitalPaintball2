@@ -4989,11 +4989,7 @@ void R_Register(void)
 	gl_lightmap_saturation = ri.Cvar_Get("gl_lightmap_saturation", "1", CVAR_ARCHIVE); // jitsaturation / jitlight
 	gl_anisotropy = ri.Cvar_Get("gl_anisotropy", "8", CVAR_ARCHIVE); // jitanisotropy
 	gl_overbright = ri.Cvar_Get("gl_overbright", "1", CVAR_ARCHIVE); // jitbright
-#ifdef QUAKE2
-	gl_brightness = ri.Cvar_Get("gl_brightness", "1", CVAR_ARCHIVE); // jit
-#else
 	gl_brightness = ri.Cvar_Get("gl_brightness", "0", CVAR_ARCHIVE); // jit
-#endif
 	gl_autobrightness = ri.Cvar_Get("gl_autobrightness", "1", CVAR_ARCHIVE); // jit
 	gl_showbbox = ri.Cvar_Get("gl_showbbox", "0", 0);  // jit / Guy
 //	gl_modulate = ri.Cvar_Get("gl_modulate", "1.6", CVAR_ARCHIVE); // jit, default to 1.6
