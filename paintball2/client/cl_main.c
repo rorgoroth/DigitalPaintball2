@@ -2352,16 +2352,23 @@ void CL_InitLocal (void)
 	cl_conback = Cvar_Get("cl_conback", "conback", CVAR_ARCHIVE);				// T3RR0R15T: console background
 	cl_menuback = Cvar_Get("cl_menuback", "conback", CVAR_ARCHIVE);				// T3RR0R15T: menu background
 
-	serverlist_source =		Cvar_Get("serverlist_source", 
+#ifdef QUAKE2
+	serverlist_source =		Cvar_Get("serverlist_source", "http://q2servers.com/?raw=1", 0);
+	serverlist_source2 =	Cvar_Get("serverlist_source2", "http://dplogin.com/q2servers.txt", 0);
+	serverlist_source3 =	Cvar_Get("serverlist_source3", "", 0);
+	serverlist_blacklist =	Cvar_Get("serverlist_blacklist", "http://dplogin.com/blacklist.php", 0);
+	serverlist_udp_source1 = Cvar_Get("serverlist_udp_source1", "master.q2servers.com:27000", 0);
+#else
+	serverlist_source =		Cvar_Get("serverlist_source",
 		"http://dplogin.com/servers.txt", 0); // jitserverlist / jitmenu / T3RR0R15T: changed to dplogin.com
-	serverlist_source2 =	Cvar_Get("serverlist_source2", 
+	serverlist_source2 =	Cvar_Get("serverlist_source2",
 		"http://dplogin.com/serverlist.php", 0); // jitserverlist / jitmenu / T3RR0R15T: changed to dplogin.com
 	serverlist_source3 =	Cvar_Get("serverlist_source3",
 		"http://www.otb-server.de/serverlist.txt", 0); // jitserverlist / jitmenu / T3RR0R15T: changed to otb-server.de as mirror (sync with udp serverlist every 5 minutes)
 	serverlist_blacklist =	Cvar_Get("serverlist_blacklist",
 		"http://dplogin.com/blacklist.php", 0);
 	serverlist_udp_source1 = Cvar_Get("serverlist_udp_source1", "dplogin.com:27900", 0); // jitserverlist
-
+#endif
 	// fix up old serverlist settings now that the server has moved:
 	if (Q_streq(serverlist_source->string, "http://www.planetquake.com/digitalpaint/servers.txt") ||
 		Q_streq(serverlist_source->string, "http://digitalpaint.planetquake.gamespy.com/servers.txt")) // T3RR0R15T: added second old url
@@ -2986,8 +2993,10 @@ void CL_Init (void)
 	Con_ToggleConsole_f(); // jitspoe -- start with console down
 	Con_ToggleConsole_f(); // jitspoe -- lift it up again if in play
 	M_Menu_Main_f(); // jitmenu
+
+#ifndef QUAKE2 // Paintball2-specific stuff
 	CL_VerifyContent(); // jit
-#ifndef QUAKE2
+
 	// === jitprofile
 	if (CL_HasProfile())
 		Cbuf_AddText("menu profile\n");

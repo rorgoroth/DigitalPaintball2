@@ -501,7 +501,7 @@ static menu_widget_t *free_widgets (menu_widget_t *widget)
 		if (widget->type == WIDGET_TYPE_SELECT && widget->select_list)
 		{
 			if (widget->flags & WIDGET_FLAG_FILELIST)
-				FS_FreeFileList(widget->select_list, widget->select_totalitems+1);
+				FS_FreeFileList(widget->select_list, widget->select_totalitems);
 			else
 				free_string_array(widget->select_list, widget->select_totalitems);
 		}

@@ -116,7 +116,7 @@ void CL_ParseDelta (entity_state_t *from, entity_state_t *to, int number, int bi
 	if (bits & U_FRAME16)
 		to->frame = MSG_ReadShort(&net_message);
 
-	assert(to->skinnum >= 0); // jitdebug
+	//assert(to->skinnum >= 0); // jitdebug
 
 	if ((bits & U_SKIN8) && (bits & U_SKIN16))		//used for laser colors
 		to->skinnum = MSG_ReadLong(&net_message);
@@ -125,7 +125,7 @@ void CL_ParseDelta (entity_state_t *from, entity_state_t *to, int number, int bi
 	else if (bits & U_SKIN16)
 		to->skinnum = MSG_ReadShort(&net_message);
 
-	assert(to->skinnum >= 0);
+	//assert(to->skinnum >= 0);
 
 	if ((bits & (U_EFFECTS8|U_EFFECTS16)) == (U_EFFECTS8|U_EFFECTS16))
 		to->effects = MSG_ReadLong(&net_message);

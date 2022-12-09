@@ -633,6 +633,11 @@ static void M_ServerlistUpdateUDP (int nStart)
 
 	adr.port = htons(UDP_SERVERLIST_PORT);
 	NET_StringToAdr(serverlist_udp_source1->string, &adr);
+#ifdef QUAKE2
+	// TODO: Out of band adds the -1 in front, but I think the normal master server doesn't respect that.
+	Netchan_OutOfBandPrint(NS_CLIENT, adr, "query\n");
+//	NET_SendPacket(net_socket, send.cursize, send.data, adr);
+#else
 	//Netchan_OutOfBandPrint(NS_CLIENT, adr, "serverlist1 %d %s\n", nStart, g_szRandomServerlistString);
 	Netchan_OutOfBandPrint(NS_CLIENT, adr, "serverlist2\n");
 
@@ -642,6 +647,7 @@ static void M_ServerlistUpdateUDP (int nStart)
 		Netchan_OutOfBandPrint(NS_CLIENT, adr, "updatecheck1 " BUILD_S "\n"); // versioncheck / checkversion / buildcheck
 		didUpdateCheck = true;
 	}
+#endif
 }
 
 
@@ -916,14 +922,15 @@ void M_ServerlistUpdate_f (void)
 {
 	NET_Config(true); // Open up ports
 
-#if 1 // todo - cvar?
-	M_ServerlistUpdateUDP(0);
-#else
+#ifdef QUAKE2
 	if (!refreshing)
 	{
 		refreshing = true;
 		pthread_create(&updatethread, NULL, M_ServerlistUpdate_multithreaded, NULL);
 	}
+#else
+	// Paintball2 has a UDP server.
+	M_ServerlistUpdateUDP(0);
 #endif
 }
 

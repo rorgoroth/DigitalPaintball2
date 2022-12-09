@@ -601,10 +601,15 @@ void WriteAliases (FILE *f)
 
 	for (a = cmd_alias; a; a = a->next)
 	{
-		Com_sprintf(buffer, sizeof(buffer), "alias %s \"%s\n", a->name, a->value);
-		// a->name stores a \n, so replace that with ending quote
-		buffer[strlen(buffer)-2] = '\"'; 
-		fprintf (f, "%s", buffer);
+#ifdef QUAKE2 // hack - newgame alias shouldn't be saved or it'll break mods/mission packs.
+		if (strcmp(a->name, "newgame"))
+#endif
+		{
+			Com_sprintf(buffer, sizeof(buffer), "alias %s \"%s\n", a->name, a->value);
+			// a->name stores a \n, so replace that with ending quote
+			buffer[strlen(buffer)-2] = '\"';
+			fprintf (f, "%s", buffer);
+		}
 	}
 }
 

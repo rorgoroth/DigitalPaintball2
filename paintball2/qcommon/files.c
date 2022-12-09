@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 char **FS_ListFilesFilesystemOnly (const char *findname, int *numfiles, unsigned musthave, unsigned canthave, qboolean sort);
+qboolean Q_MatchFilter (const char *text, const char *filter, qboolean caseSensitive);
 
 /*
 =============================================================================

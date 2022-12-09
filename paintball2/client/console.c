@@ -150,16 +150,18 @@ void Con_ToggleConsole_f (void)
 	if (cls.key_dest == key_console)
 	{
 		M_ForceMenuOff();
-		//Cvar_Set("paused", "0");
+#ifdef QUAKE2
+		Cvar_Set("paused", "0");
+#endif
 	}
 	else
 	{
-		M_ForceMenuOff ();
-		cls.key_dest = key_console;	
-
-		//if (Cvar_VariableValue("maxclients") == 1 
-		//	&& Com_ServerState())
-		//	Cvar_Set("paused", "1");
+		M_ForceMenuOff();
+		cls.key_dest = key_console;
+#ifdef QUAKE2
+		if (Cvar_VariableValue("maxclients") == 1 && Com_ServerState())
+			Cvar_Set("paused", "1");
+#endif
 	}
 }
 

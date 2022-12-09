@@ -1329,11 +1329,11 @@ void SCR_ExecuteLayoutString (char *s) // jit: optimized somewhat
 				int		score, ping, time;
 
 				token = COM_Parse(&s);
-				x = viddef.width * 0.5 - (160 + atoi(token)) * hudscale; // jithudscale
+				x = viddef.width * 0.5 - 160 * hudscale + atoi(token) * hudscale; // jithudscale
 				token = COM_Parse (&s);
-				y = viddef.height * 0.5 - (120 + atoi(token)) * hudscale; // jithudscale
+				y = viddef.height * 0.5 - 120 * hudscale + atoi(token) * hudscale; // jithudscale
 				SCR_AddDirtyPoint(x, y);
-				SCR_AddDirtyPoint(x + 159, y + 31);
+				SCR_AddDirtyPoint(x + 159 * hudscale, y + 31 * hudscale);
 				token = COM_Parse(&s);
 				value = atoi(token);
 				if (value >= MAX_CLIENTS || value < 0)
@@ -1367,9 +1367,9 @@ void SCR_ExecuteLayoutString (char *s) // jit: optimized somewhat
 				char	block[80];
 
 				token = COM_Parse(&s);
-				x = viddef.width * 0.5 - (160 + atoi(token)) * hudscale;
+				x = viddef.width * 0.5 - 160 * hudscale + atoi(token) * hudscale;
 				token = COM_Parse(&s);
-				y = viddef.height * 0.5 - (120 + atoi(token)) * hudscale;
+				y = viddef.height * 0.5 - 120 * hudscale + atoi(token) * hudscale;
 				SCR_AddDirtyPoint(x, y);
 				SCR_AddDirtyPoint(x + 159, y + 31);
 				token = COM_Parse(&s);
@@ -1521,17 +1521,17 @@ void SCR_ExecuteLayoutString (char *s) // jit: optimized somewhat
 
 		if (token[0]=='x')
 		{
-			if (token[1]=='l')
+			if (token[1]=='l') // "xl"
 			{
 				token = COM_Parse (&s);
 				x = atoi(token) * hudscale; // jithudscale
 			}
-			else if (token[1]=='r')
+			else if (token[1]=='r') // "xr"
 			{
 				token = COM_Parse (&s);
 				x = viddef.width + atoi(token) * hudscale; // jithudscale
 			}
-			else if (token[1]=='v')
+			else if (token[1]=='v') // "xv"
 			{
 				token = COM_Parse (&s);
 				x = viddef.width*0.5 - 160*hudscale + atoi(token)*hudscale; // jithudscale
@@ -1543,20 +1543,20 @@ void SCR_ExecuteLayoutString (char *s) // jit: optimized somewhat
 
 		if (token[0]=='y')
 		{
-			if (token[1]=='t')
+			if (token[1]=='t') // "yt"
 			{
-				token = COM_Parse (&s);
+				token = COM_Parse(&s);
 				y = atoi(token) * hudscale; // jithudscale
 			}
-			else if (token[1]=='b')
+			else if (token[1]=='b') // "yb"
 			{
-				token = COM_Parse (&s);
+				token = COM_Parse(&s);
 				y = viddef.height + atoi(token) * hudscale; // jithudscale
 			}
-			else if (token[1]=='v')
+			else if (token[1]=='v') // "yv"
 			{
-				token = COM_Parse (&s);
-				y = viddef.height*0.5 - 120*hudscale + atoi(token)*hudscale; // jithudscale
+				token = COM_Parse(&s);
+				y = viddef.height * 0.5 - 120 * hudscale + atoi(token) * hudscale; // jithudscale
 			}
 
 			//token = COM_Parse (&s);
