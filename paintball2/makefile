@@ -2,7 +2,7 @@
 # Paintball2 Makefile for Linux
 #
 # Nov '97 by Zoid <zoid@idsoftware.com>
-# Modified Jan 2010 by jitspoe
+# Modified Dec 2022 by jitspoe
 #
 # ELF only
 #
@@ -13,12 +13,9 @@ OSTYPE := $(shell uname -s)
 # This nice line comes from the linux kernel makefile
 ARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc/ -e s/sparc64/sparc/ -e s/arm.*/arm/ -e s/sa110/arm/ -e s/alpha/axp/)
 
-
-ifneq ($(findstring NT-, $(OSTYPE)), NT-)
-ifneq ($(findstring FreeBSD, $(OSTYPE)), FreeBSD)
-ifneq ($(findstring Linux, $(OSTYPE)), Linux)
+ifneq ($(OSTYPE),Linux)
+ifneq ($(OSTYPE),FreeBSD)
 $(error OS $(OSTYPE) is currently not supported)
-endif
 endif
 endif
 
@@ -129,6 +126,8 @@ BINDIR=./paintball2_bin
 
 BUILD_DEBUG_DIR=build_debug
 BUILD_RELEASE_DIR=build_release
+BUILD_Q2_DEBUG_DIR=build_q2_debug
+BUILD_Q2_RELEASE_DIR=build_q2_release
 
 X11BASE?= /usr/X11R6
 LOCALBASE?= /usr/local
@@ -238,10 +237,13 @@ endif
 
 DEBUG_CFLAGS=$(BASE_CFLAGS) -g -ggdb -pipe -ffloat-store -ffast-math -D_DEBUG
 
+Q2_DEBUG_CFLAGS=$(DEBUG_CFLAGS) -DQUAKE2
+Q2_RELEASE_CFLAGS=$(RELEASE_CFLAGS) -DQUAKE2
+
 LDFLAGS=-L$(LOCALBASE)/lib -lm
 
 ifeq ($(OSTYPE),Linux)
-LDFLAGS+= -ldl -lrt
+LDFLAGS+= -ldl -lrt -pthread
 endif
 
 ifeq ($(OSTYPE),FreeBSD)
@@ -250,7 +252,7 @@ endif
 
 ifeq ($(OSTYPE),Linux)
 ifeq ($(strip $(BUILD_ALSA_SND)),YES)
-LDFLAGS+= -lpthread
+
 ALSALDFLAGS=-lasound
 endif
 endif
@@ -327,6 +329,8 @@ all:
 	@echo "   "">> Add VERBOSE=YES to a verbose compilation output, defaults to NO"
 	@echo "   "">> make release"
 	@echo "   "">> make debug"
+	@echo "   "">> make q2release"
+	@echo "   "">> make q2debug"
 	@echo "   "">> make install (paintball2 home dir)."
 	@echo "   "">> make install_root (required when was built with DATADIR/LIBDIR"
 	@echo "   ""                      options enabled, you must gain root privileges)."
@@ -400,6 +404,37 @@ else
 	$(MAKE) targets BUILDDIR=$(BUILD_RELEASE_DIR) CFLAGS="$(RELEASE_CFLAGS)"
 endif
 
+q2debug:
+	@-mkdir -p $(BUILD_Q2_DEBUG_DIR) \
+		$(BINDIR) \
+		$(BUILD_Q2_DEBUG_DIR)/a3d \
+		$(BUILD_Q2_DEBUG_DIR)/client
+
+ifeq ($(strip $(BUILD_DEDICATED)),YES)
+	@-mkdir -p $(BUILD_Q2_DEBUG_DIR) \
+		$(BUILD_Q2_DEBUG_DIR)/ded
+endif
+
+ifeq ($(strip $(BUILD_BOTLIB)),YES)
+	@-mkdir -p $(BUILD_Q2_DEBUG_DIR) \
+		$(BUILD_Q2_DEBUG_DIR)/bots
+endif
+
+ifeq ($(strip $(BUILD_GLX)),YES)
+	@-mkdir -p $(BUILD_Q2_DEBUG_DIR) \
+		$(BUILD_Q2_DEBUG_DIR)/ref_gl
+endif
+
+ifeq ($(strip $(BUILD_SDLGL)),YES)
+	@-mkdir -p $(BUILD_Q2_DEBUG_DIR) \
+		$(BUILD_Q2_DEBUG_DIR)/ref_gl
+endif
+
+ifneq ($(VERBOSE),YES)
+	@-$(MAKE) --silent targets BUILDDIR=$(BUILD_Q2_DEBUG_DIR) CFLAGS="$(Q2_DEBUG_CFLAGS)"
+else
+	$(MAKE) targets BUILDDIR=$(BUILD_Q2_DEBUG_DIR) CFLAGS="$(Q2_DEBUG_CFLAGS)"
+endif
 
 targets: $(TARGETS)
 	@echo "Paintball2 compilation finished succesfully =)"
@@ -719,7 +754,9 @@ clean:
 	@echo Cleaning objects...
 	@rm -rf \
 	$(BUILD_DEBUG_DIR) \
-	$(BUILD_RELEASE_DIR)
+	$(BUILD_RELEASE_DIR) \
+	$(BUILD_Q2_DEBUG_DIR) \
+	$(BUILD_Q2_RELEASE_DIR) \
 	@echo ...................
 	@echo .... Done
 
@@ -764,6 +801,7 @@ else
 endif
 	@cp -rv linux/paintball2_datadir.run linux/paintball2.png $(DATADIR)
 	@chmod +x $(DATADIR)/paintball2_datadir.run
+	@cp -rv linux/paintball2.desktop /home/*/Desktop/Paintball2
 	@ln -sfv $(DATADIR)/paintball2_datadir.run $(SYSBINDIR)/paintball2
 	@printf "Symlinking executable to $(SYSBINDIR)\n"
 ifeq ($(strip $(BUILD_DEDICATED)),YES)
