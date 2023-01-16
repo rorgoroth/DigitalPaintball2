@@ -3004,10 +3004,12 @@ void CL_Init (void)
 		Cbuf_AddText("menu noprofile\n");
 	// jitprofile ===
 
+#if 0 // Just disable tutorial for now.  Not sure it's great to force it on all the time.
 	if (!Cvar_VariableValue("cl_tutorialcomplete")) // jittutorial
 	{
 		Cbuf_AddText("menu_store;map tutorials/tutorial1\n");
 	}
+#endif
 #endif
 	Cbuf_Execute();
 }
