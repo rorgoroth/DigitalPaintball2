@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 
 char *Cmd_MacroExpandString (const char *text);
+void CL_WriteConfiguration (const char *filename);
 
 #ifndef WIN32
 #define _strtime(a) sprintf(a, "TODO")
@@ -821,7 +822,16 @@ void CL_ParseServerData (void)
 
 	// set gamedir
 	if ((*str && (!fs_gamedirvar->string || !*fs_gamedirvar->string || !Q_streq(fs_gamedirvar->string, str))) || (!*str && (fs_gamedirvar->string || *fs_gamedirvar->string)))
-		Cvar_Set("game", str); // jitodo -- don't set game on demos (cl.attractloop)
+	{
+		if (!attractloop) // jitdemo - don't change game while viewing demos
+		{
+			if (*str || Q_streq(fs_gamedirvar->string, BASEDIRNAME)) // If str isn't set and "game" is set to the base game, don't change the game cvar.
+			{
+				CL_WriteConfiguration("config.cfg"); // jitconfig - write previous game's config so settings don't get lost when changing mods.
+				Cvar_Set("game", str);
+			}
+		}
+	}
 
 	// parse player entity number
 	cl.playernum = MSG_ReadShort(&net_message);

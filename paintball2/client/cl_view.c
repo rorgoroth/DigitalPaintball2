@@ -676,7 +676,11 @@ void V_Init (void)
 	Cmd_AddCommand("gun_prev", V_Gun_Prev_f);
 	Cmd_AddCommand("gun_model", V_Gun_Model_f);
 	Cmd_AddCommand("viewpos", V_Viewpos_f);
+#ifdef QUAKE2
+	crosshair = Cvar_Get("crosshair", "1", CVAR_ARCHIVE); // jit, default crosshair on
+#else
 	crosshair = Cvar_Get("crosshair", "2", CVAR_ARCHIVE); // jit, default crosshair on
+#endif
 	cl_testparticles = Cvar_Get("cl_testparticles", "0", 0);
 	cl_testentities = Cvar_Get("cl_testentities", "0", 0);
 	cl_testlights = Cvar_Get("cl_testlights", "0", 0);

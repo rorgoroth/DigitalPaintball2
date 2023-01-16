@@ -1463,7 +1463,7 @@ void SCR_ExecuteLayoutString (char *s) // jit: optimized somewhat
 		if (token[0]=='n')
 		{	// draw a number
 			token = COM_Parse(&s);
-			width = atoi(token) * hudscale; // jithudscale
+			width = atoi(token);
 			token = COM_Parse(&s);
 			value = cl.frame.playerstate.stats[atoi(token)];
 			SCR_DrawField(x, y, 0, width, value);
