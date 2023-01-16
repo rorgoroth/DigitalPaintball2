@@ -57,7 +57,8 @@ void BotHandleGameEvent (game_event_t event, edict_t *ent, void *data1, void *da
 void BotRunFrame (int msec, float level_time);
 qboolean BotCommand (edict_t *ent, const char *cmd, const char *cmd2, const char *cmd3, const char *cmd4);
 void BotExitLevel (void);
-void AddBot (const char *name);
+void AddBot (const char *name, qboolean manually_added);
+extern qboolean g_admin_modified_bots;
 
 extern bot_import_t bi;
 

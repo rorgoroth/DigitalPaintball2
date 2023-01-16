@@ -25,13 +25,18 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 static void AddBotCommand (const char *name)
 {
-	AddBot(name);
+	AddBot(name, true);
 }
 
 
 // The bot will get removed rom the manager in BotHandleDisconnect
-void RemoveBot (edict_t *ent)
+void RemoveBot (edict_t *ent, qboolean manually_removed)
 {
+	if (manually_removed)
+	{
+		g_admin_modified_bots = true;
+	}
+
 	bi.DisconnectBot(ent);
 }
 
@@ -42,7 +47,7 @@ static void RemoveAllBots (edict_t *ent_cmd)
 
 	while (bots.count)
 	{
-		RemoveBot(bots.ents[0]);
+		RemoveBot(bots.ents[0], true);
 	}
 
 	bi.cprintf(ent_cmd, PRINT_POPUP, "Removed %d bots.\n", bot_count);
@@ -98,7 +103,7 @@ static void RemoveBotCommand (const char *nameToRemove, edict_t *ent_cmd)
 		const char *name = bi.GetClientName(ent);
 
 		bi.cprintf(ent_cmd, PRINT_POPUP, "Removed bot: %s\n", name);
-		RemoveBot(ent);
+		RemoveBot(ent, true);
 		return;
 	}
 

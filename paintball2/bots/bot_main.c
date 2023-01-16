@@ -41,6 +41,7 @@ cvar_t *bots_vs_humans = NULL;
 cvar_t *bot_min_players = NULL;
 cvar_t *bot_min_bots = NULL;
 cvar_t *sv_gravity = NULL;
+qboolean g_admin_modified_bots = false;
 #ifdef _DEBUG
 cvar_t *bot_remove_near_waypoints = NULL;
 #endif
@@ -48,7 +49,7 @@ cvar_t *bot_remove_near_waypoints = NULL;
 void FreeObservations (void);
 void BotInitAim (void);
 void UpdatePlayerPosHistory(int msec);
-void RemoveBot (edict_t *ent);
+void RemoveBot (edict_t *ent, qboolean manually_removed);
 void BotUpdateWaypoints (void);
 void BotInitObservations (const char *mapname);
 
@@ -71,7 +72,7 @@ void BotInitMap (const char *mapname, int game_mode)
 
 	for (i = 0; i < bots.num_to_readd; ++i)
 	{
-		AddBot(bots.names_to_readd[i]);
+		AddBot(bots.names_to_readd[i], false);
 	}
 
 	bots.num_to_readd = 0;
@@ -92,8 +93,7 @@ void BotShutdownMap (void)
 
 EXPORT bot_export_t *GetBotAPI (bot_import_t *import)
 {
-	bi = *import;
-	g_bot_export.apiversion = BOT_API_VERSION; // need to actually validate this at some point.
+	g_bot_export.apiversion = BOT_API_VERSION;
 	g_bot_export.Init = BotInitLibrary;
 	g_bot_export.InitMap = BotInitMap;
 	g_bot_export.ShutdownMap = BotShutdownMap;
@@ -109,6 +109,13 @@ EXPORT bot_export_t *GetBotAPI (bot_import_t *import)
 	g_bot_export.PlayerDie = BotPlayerDie; // todo
 	g_bot_export.SetDefendingTeam = BotSetDefendingTeam;
 	g_bot_export.GetRandomWaypointPositions = BotGetRandomWaypointPositions;
+	g_bot_export.RemoveBot = RemoveBot;
+
+	// If the API version is mismatched, this could potentially stomp on memory or something.
+	if (import->apiversion == BOT_API_VERSION)
+	{
+		bi = *import;
+	}
 
 	return &g_bot_export;
 }
@@ -129,6 +136,9 @@ void BotInitLibrary (void)
 	bots_vs_humans = bi.cvar("bots_vs_humans", "0", 0);
 	bot_min_players = bi.cvar("bot_min_players", "0", 0);
 	bot_min_bots = bi.cvar("bot_min_bots", "0", 0);
+	bots_vs_humans->modified = false;
+	bot_min_players->modified = false;
+	bot_min_bots->modified = false;
 	sv_gravity = bi.cvar("sv_gravity", "800", 0);
 #ifdef _DEBUG
 	bot_remove_near_waypoints = bi.cvar("bot_remove_near_waypoints", "0", 0);
@@ -152,24 +162,32 @@ void BotUpdateConnections (int msec)
 	g_time_to_next_connection_check_ms -= msec;
 	if (g_time_to_next_connection_check_ms <= 0 && bots.level_time > 10.0) // wait a few seconds after the map changes so bots don't disconnect while players are loading and make teams unbalanced.
 	{
-		int num_players = bi.GetNumPlayersOnTeams();
-		int num_humans = num_players - bots.count;
+		int num_active_players = bi.GetNumPlayersOnTeams();
+		int num_players_total = bi.GetNumPlayersTotal();
+		int num_active_humans = num_active_players - bots.count;
+		int num_humans_total = num_players_total - bots.count;
 		int bots_needed = -1;
+
+		// Go back to using bot settings if everybody has disconnected.
+		if (num_players_total == 0)
+		{
+			g_admin_modified_bots = false;
+		}
 
 		g_time_to_next_connection_check_ms = 3000 + nu_rand(1000); // Every 3 - 4 seconds, check to see if we need to add a bot
 
 		// TODO: Force bots and humans to be on different teams.
 		if (bots_vs_humans->value > 0)
 		{
-			bots_needed = ceil(bots_vs_humans->value * num_humans);
+			bots_needed = ceil(bots_vs_humans->value * num_active_humans);
 		}
 
 		// If players on the server is less than this, bots will fill in
 		if (bot_min_players->value > 0)
 		{
-			if (num_humans > 0)
+			if (num_active_humans > 0)
 			{
-				int fill_count = bot_min_players->value - num_humans;
+				int fill_count = bot_min_players->value - num_active_humans;
 
 				if (fill_count > bots_needed)
 				{
@@ -185,7 +203,7 @@ void BotUpdateConnections (int msec)
 		// If players on server, guarantee there are at least this many bots
 		if (bot_min_bots->value > 0)
 		{
-			if (num_humans > 0)
+			if (num_active_humans > 0)
 			{
 				if (bots_needed < bot_min_bots->value)
 				{
@@ -197,8 +215,9 @@ void BotUpdateConnections (int msec)
 				bots_needed = 0;
 			}
 		}
-		
-		if (bots_needed >= 0)
+
+		// If an admin explicitly adds or removes bots, ignore the settings and just leave the bots as-is
+		if (bots_needed >= 0 && !g_admin_modified_bots)
 		{
 			int bot_diff;
 
@@ -206,11 +225,11 @@ void BotUpdateConnections (int msec)
 			{
 				int r = rand() % bots.count;
 				edict_t *bot_ent = bots.ents[r];
-				RemoveBot(bot_ent);
+				RemoveBot(bot_ent, false);
 			}
 			else if (bots.count < bots_needed)
 			{
-				AddBot(NULL);
+				AddBot(NULL, false);
 			}
 
 			bot_diff = abs(bots.count - bots_needed);
@@ -224,7 +243,6 @@ void BotUpdateConnections (int msec)
 }
 
 
-
 void BotRunFrame (int msec, float level_time)
 {
 	bots.level_time = level_time;
@@ -233,6 +251,15 @@ void BotRunFrame (int msec, float level_time)
 	BotUpdateWaypoints();
 	UpdatePlayerPosHistory(msec);
 	BotUpdateConnections(msec);
+
+	// If one of the bot cvars changes, start auto-managing the bots again, in case the admin added/removed a bot, then changed a setting later.
+	if (bots_vs_humans->modified || bot_min_players->modified || bot_min_bots->modified)
+	{
+		bots_vs_humans->modified = false;
+		bot_min_players->modified = false;
+		bot_min_bots->modified = false;
+		g_admin_modified_bots = false;
+	}
 }
 
 
@@ -346,7 +373,8 @@ retry:
 	return false;
 }
 
-void AddBot (const char *name)
+
+void AddBot (const char *name, qboolean manually_added)
 {
 	char userinfo[MAX_INFO_STRING];
 	edict_t *ent;
@@ -375,6 +403,11 @@ void AddBot (const char *name)
 		bots.count++;
 
 		bi.dprintf("Adding bot: %s\n", name);
+
+		if (manually_added)
+		{
+			g_admin_modified_bots = true;
+		}
 	}
 	else
 	{
