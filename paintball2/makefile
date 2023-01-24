@@ -66,19 +66,19 @@ HAVE_IPV6?=NO
 
 USE_SSE?=YES
 ENABLE_PROFILING?=NO
-USE_X86_ASM?=NO
+USE_X86_ASM?=YES
 
 #===========================#
 # Read from $(DATADIR) and  #
 # write to "~/.paintball2"  #
 #===========================#
-WITH_DATADIR?=YES
+WITH_DATADIR?=NO
 
 #===========================#
 # Load renderers            #
 # from $(LIBDIR)            #
 #===========================#
-WITH_LIBDIR?=YES
+WITH_LIBDIR?=NO
 
 #===========================#
 # Sound Drivers             #
@@ -86,7 +86,7 @@ WITH_LIBDIR?=YES
 ifeq ($(OSTYPE),Linux)
 BUILD_ALSA_SND?=YES      # Alsa sound driver
 endif
-BUILD_OSS_SND?=YES       # OSS sound driver
+BUILD_OSS_SND?=NO        # OSS sound driver
 BUILD_SDL_SND?=YES       # SDL sound driver
 
 #===========================#
@@ -114,7 +114,7 @@ BUILD_SDLGL?=YES
 #===========================#
 # Joystick support.         #
 #===========================#
-BUILD_JOYSTICK?=YES
+BUILD_JOYSTICK?=NO
 
 # (hopefully) end of configurable options
 
@@ -122,7 +122,7 @@ VERSION=2.0
 BUILD=27
 
 MOUNT_DIR=.
-BINDIR=./paintball2_bin
+BINDIR=./build
 
 BUILD_DEBUG_DIR=build_debug
 BUILD_RELEASE_DIR=build_release
