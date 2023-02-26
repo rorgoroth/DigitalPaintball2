@@ -289,6 +289,7 @@ void CL_PredictMovement (void)
 		pm.cmd = cl.cmds[frame];
 		Pmove(&pm);
 		VectorCopy(pm.s.origin, cl.predicted_origins[frame]); // save for comparing against server results so we can smooth corrections
+		VectorCopy(pm.viewangles, cl.predicted_angles); // This is needed so the pitch locking on respawn will work.
 	}
 
 	stepheight = g_stepheight; // jitmove - take the step height from the last sent cmd
@@ -304,6 +305,7 @@ void CL_PredictMovement (void)
 	{
 		Pmove(&pm);
 		VectorCopy(pm.s.origin, cl.predicted_origins[frame]);
+		VectorCopy(pm.viewangles, cl.predicted_angles); // This is needed so the pitch locking on respawn will work.
 		unsentstepheight = g_stepheight;
 		stepheight = 0.0f; // in this case, we're between sent cmd frames, so we don't want to count the step multiple times
 	}
