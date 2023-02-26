@@ -68,6 +68,7 @@ void BotHandleFlagGrab (edict_t *flag, edict_t *player_ent)
 void BotHandleRoundStart (void)
 {
 	int bot_index;
+	bots.between_rounds = false;
 
 	// Bots don't have a flag when the round starts.
 	for (bot_index = 0; bot_index < bots.count; ++bot_index)
@@ -75,6 +76,18 @@ void BotHandleRoundStart (void)
 		bots.movement[bot_index].last_target_msec = 99999; // Clear out the target so bots don't wander around facing backward on new rounds (hopefully)
 		bots.movement[bot_index].aim_target = NULL;
 		bots.goals[bot_index].has_flag = false;
+	}
+}
+
+
+void BotHandleRoundOver (void)
+{
+	int bot_index;
+	bots.between_rounds = true;
+
+	for (bot_index = 0; bot_index < bots.count; ++bot_index)
+	{
+		bots.goals[bot_index].timeleft_msec = nu_rand(2000) + 200; // Round just ended, so stop going for current goals over the next couple seconds.
 	}
 }
 
@@ -129,6 +142,8 @@ void BotHandleGameEvent (game_event_t event, edict_t *ent, void *data1, void *da
 	case EVENT_DROPFLAG:
 		//BotHandleFlagDrop(ent); // Ent is the carrier.  We don't know the flag...
 		break;
+	case EVENT_ROUNDOVER:
+		BotHandleRoundOver();
 	}
 	// Events like round starts, flag grabs, eliminations, etc. will be passed in here
 }

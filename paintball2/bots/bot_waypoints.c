@@ -695,6 +695,12 @@ void BotAddPotentialWaypointFromPmove (player_observation_t *observation, const 
 	qboolean on_ladder = false;
 	float waypoint_add_dist_sq = WAYPOINT_ADD_DIST * WAYPOINT_ADD_DIST;
 
+	// Players could be standing in hazards or something between rounds and are not generally hanging out in normal spaces, so ignore these.
+	if (bots.between_rounds)
+	{
+		return;
+	}
+
 	// This block of code does nothing.  Ignore it for now.
 #ifdef _DEBUG
 	if (bot_remove_near_waypoints->value)

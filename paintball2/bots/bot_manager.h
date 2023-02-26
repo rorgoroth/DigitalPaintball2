@@ -60,6 +60,7 @@ typedef struct botmovedata_s {
 	short				time_til_try_path; // used for wandering
 	float				last_yaw;
 	float				last_pitch;
+	vec3_t				velocity; // approximate velocity based on position/time.
 	botfollowpath_t		path_info; // for following observed player paths
 	bot_waypoint_path_t	waypoint_path;
 	qboolean			stop; // defend/camp/whatever
@@ -83,6 +84,8 @@ typedef struct botmanager_s {
 	int					time_since_last_pathfind;
 	int					game_mode; // corresponds to the game's "ctfmode"
 	int					defending_team; // for siege mode
+	qboolean			admin_modified_bots;
+	qboolean			between_rounds; // In between rounds, so do some silly nonsense.
 } botmanager_t;
 
 extern botmanager_t bots;

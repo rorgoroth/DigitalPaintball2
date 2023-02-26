@@ -34,7 +34,7 @@ void RemoveBot (edict_t *ent, qboolean manually_removed)
 {
 	if (manually_removed)
 	{
-		g_admin_modified_bots = true;
+		bots.admin_modified_bots = true;
 	}
 
 	bi.DisconnectBot(ent);
@@ -118,7 +118,7 @@ void BotHere (edict_t *ent)
 
 	for (bot_index = 0; bot_index < bots.count; ++bot_index)
 	{
-		BotSetGoal(bot_index, BOT_GOAL_REACH_POSITION, ent->s.origin);
+		BotSetGoal(bot_index, BOT_GOAL_REACH_POSITION, ent->s.origin, ent, true, 20000);
 	}
 }
 

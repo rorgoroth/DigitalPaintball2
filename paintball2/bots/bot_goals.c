@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014 Nathan "jitspoe" Wulf, Digital Paint
+Copyright (c) 2014-2023 Nathan "jitspoe" Wulf, Digital Paint
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -118,13 +118,16 @@ void BotSetDefendingTeam (int defending_team)
 }
 
 
-void BotSetGoal (int bot_index, botgoaltype_t goaltype, vec3_t position)
+void BotSetGoal (int bot_index, botgoaltype_t goaltype, vec3_t position, const edict_t *target_ent, qboolean end_on_path_complete, int time_msec)
 {
 	botgoal_t *goal = bots.goals + bot_index;
 
 	goal->type = goaltype;
 	goal->active = true;
 	goal->changed = true;
+	goal->timeleft_msec = time_msec;
+	goal->ent = target_ent;
+	goal->end_on_path_complete = end_on_path_complete;
 	VectorCopy(position, goal->pos);
 }
 
@@ -147,16 +150,7 @@ void BotPathfindComplete (int bot_index)
 
 	// TODO: If the goal is to grab the flag, don't deactivate goal until flag is actually grabbed.
 
-	if (goal->type == BOT_GOAL_DEFEND_FLAG)
-	{
-		BotStopMoving(bot_index);
-
-		if (goal->ent)
-		{
-			BotAimAtPosition(bot_index, goal->ent->s.origin);
-		}
-	}
-	else
+	if (goal->end_on_path_complete)
 	{
 		goal->active = false;
 
@@ -165,41 +159,41 @@ void BotPathfindComplete (int bot_index)
 			bi.dprintf("Path find complete. Deactivating goal.\n");
 		}
 	}
+	else
+	{
+		BotStopMoving(bot_index);
+
+		if (goal->ent)
+		{
+			BotAimAtPosition(bot_index, goal->ent->s.origin);
+		}
+	}
 }
 
 
 void BotGoalWander (int bot_index, int msec)
 {
-	botgoal_t *goal = bots.goals + bot_index;
 	int random_point = (int)nu_rand(g_bot_waypoints.num_points); // todo: pick randomly select several and use the most player-popular one.
 
 	if (bot_debug->value)
 		bi.dprintf("Bot %d: Wandering.\n", bot_index);
 
-	goal->active = true;
-	goal->type = BOT_GOAL_WANDER;
-	goal->changed = true;
-	VectorCopy(g_bot_waypoints.positions[random_point], goal->pos);
-	goal->timeleft_msec = msec;
+	BotSetGoal(bot_index, BOT_GOAL_WANDER, g_bot_waypoints.positions[random_point], NULL, true, msec);
 }
 
 
 void BotDefendFlag (int bot_index, const edict_t *flag_ent, int time_msec)
 {
-	botgoal_t *goal = bots.goals + bot_index;
+	vec3_t goal_pos;
 
 	if (bot_debug->value)
 		bi.dprintf("Bot %d: Defending for %dms.\n", bot_index, time_msec);
-	goal->active = true;
-	goal->type = BOT_GOAL_DEFEND_FLAG;
-	goal->changed = true;
-	goal->timeleft_msec = time_msec;
-	goal->ent = flag_ent;
 
-	VectorCopy(flag_ent->s.origin, goal->pos);
+	VectorCopy(flag_ent->s.origin, goal_pos);
 	// TODO: Find an ideal location near the flag and looking at the flag.
-	goal->pos[0] += 100.0 - nu_rand(200.0);
-	goal->pos[1] += 100.0 - nu_rand(200.0);
+	goal_pos[0] += 100.0 - nu_rand(200.0);
+	goal_pos[1] += 100.0 - nu_rand(200.0);
+	BotSetGoal(bot_index, BOT_GOAL_DEFEND_FLAG, goal_pos, flag_ent, false, time_msec);
 }
 
 
@@ -215,6 +209,14 @@ const char *BotObjectiveTypeString (int objective_type)
 		return "BASE";
 	}
 	return "UNKNOWN";
+}
+
+
+void BotDoSomethingSilly (int bot_index)
+{
+	edict_t *target = NULL;
+
+	BotSetGoal(bot_index, BOT_GOAL_STOP_AND_WAIT, bots.ents[bot_index]->s.origin, target, false, nu_rand(10000));
 }
 
 
@@ -240,6 +242,9 @@ void BotUpdateGoals (int msec)
 					}
 				}
 			}
+			else if (goal->type == BOT_GOAL_STOP_AND_WAIT)
+			{
+			}
 
 			goal->timeleft_msec -= msec;
 
@@ -257,6 +262,12 @@ void BotUpdateGoals (int msec)
 			{
 				wander_chance = 0.1f; // 90% chance to go for an objective when carrying flag
 				max_wander_time_ms = 5000; // occasionally wander up to 5s to mix up where the carrier goes.
+			}
+
+			if (bots.between_rounds)
+			{
+				wander_chance = 0.5f;
+				max_wander_time_ms = 1000;
 			}
 
 			// In siege, make the defending team bots always try to defend the flag so they don't leave the base.
@@ -292,136 +303,142 @@ void BotUpdateGoals (int msec)
 					if (bot_debug->value)
 						bi.dprintf("Bot %d: Looking for a goal.\n", bot_index);
 
-					// Weight goals based on current conditions
-					for (i = 0; i < MAX_BOT_OBJECTIVES; ++i)
+					if (bots.between_rounds)
 					{
-						bot_objective_t *objective = g_bot_objectives + i;
-						
-						objective->weight = 0.0;
-						
-						if (objective->active)
-						{
-							qboolean same_team = (bi.GetTeam(objective->ent) == bot_team);
-							if (objective->objective_type == BOT_OBJECTIVE_TYPE_BASE)
-							{
-								if (goal->has_flag && (bots.game_mode == CTFTYPE_SIEGE || (bots.game_mode == CTFTYPE_1FLAG && !same_team) || same_team))
-								{
-									objective->weight = 1.0; // todo: Divide by distance?
-								}
-							}
-							else if (objective->objective_type == BOT_OBJECTIVE_TYPE_FLAG)
-							{
-								if (!same_team)
-								{
-									objective->weight = 1.0; // todo: Divide by distance?
-								}
-							}
-							
-							total_objective_weights += objective->weight;
-						}
-					}
-
-					if (total_objective_weights > 0.0)
-					{
-						float random_weight = nu_rand(total_objective_weights);
-						total_objective_weights = 0.0;
-
-						for (i = 0; i < MAX_BOT_OBJECTIVES; ++i)
-						{
-							bot_objective_t *objective = g_bot_objectives + i;
-							total_objective_weights += objective->weight;
-							if (total_objective_weights >= random_weight)
-							{
-								if (objective->objective_type == BOT_OBJECTIVE_TYPE_FLAG)
-								{
-									if (bi.GetTeam(objective->ent) == bot_team)
-									{
-										BotDefendFlag(bot_index, objective->ent, (int)nu_rand(30000.0f)); // 0-30s
-									}
-									else
-									{
-										if (bot_debug->value)
-											bi.dprintf("Bot %d: Going for flag.\n", bot_index);
-										goal->active = true;
-										goal->type = BOT_GOAL_REACH_POSITION; // TODO: Grab flag type
-										goal->changed = true;
-										goal->timeleft_msec = 10000 + (int)nu_rand(60000.0f); // 10-70 seconds.
-										VectorCopy(objective->ent->s.origin, goal->pos);
-										goal->pos[2] += objective->ent->mins[2] - bot_ent->mins[2] + 1.0; // flag mins aren't as low as player mins, so we need to make sure this is reachable, otherwise traces will fail.
-									}
-								}
-								else if (objective->objective_type == BOT_OBJECTIVE_TYPE_BASE)
-								{
-									trace_t trace;
-									vec3_t target_center;
-									int axis;
-									vec3_t temp_mins, temp_maxs;
-
-									// Base might be in some kind of tight location, like under a platform, so make a really small mins/maxs to check for the ground position
-									VectorCopy(bot_ent->mins, temp_mins);
-									VectorCopy(bot_ent->maxs, temp_maxs);
-									temp_mins[2] = 0;
-									temp_maxs[2] = 12;
-
-									goal->active = true;
-									goal->type = BOT_GOAL_REACH_POSITION;
-									goal->changed = true;
-									goal->timeleft_msec = (int)nu_rand(70000.0f); // 0-70 seconds.
-									VectorCopy(objective->ent->s.origin, goal->pos);
-
-									// Bases have a pos of 0 but mins/maxs define a volume, so randomly pick a location in that volume.  Guess that'll give us some slight variation on flag grabs and such as well.
-									for (axis = 0; axis < 3; ++axis)
-									{
-										float min = objective->ent->mins[axis];
-										float max = objective->ent->maxs[axis];
-									
-										goal->pos[axis] += min + nu_rand(max - min) * 0.5; // only do 50% of the trigger volume to avoid having targets on sloped walls.
-										// Center of triggers is not at the entity origin, which is usually 0, 0, 0, but instead at the average of mins + maxs
-										target_center[axis] = objective->ent->s.origin[axis] + (objective->ent->mins[axis] + objective->ent->maxs[axis]) * 0.5;
-									}
-
-									// Sometimes the base triggers go beyond the playable space, so cast from the center out.
-									trace = bi.trace(target_center, temp_mins, temp_maxs, goal->pos, bot_ent, MASK_PLAYERSOLID);
-
-									// Sometimes the base is centered in solid ground (ex: pbcup.bsp) or is right on the ground (routez.bsp), so we need to move up a bit
-									if (trace.startsolid)
-									{
-										target_center[2] += 32.0;
-										trace = bi.trace(target_center, temp_mins, temp_maxs, goal->pos, bot_ent, MASK_PLAYERSOLID);
-
-										if (trace.startsolid)
-										{
-											target_center[2] += 32.0; // move up even more
-											trace = bi.trace(target_center, temp_mins, temp_maxs, goal->pos, bot_ent, MASK_PLAYERSOLID);
-										}
-									}
-
-									// Set our end pos to what it would have been if we used the larger trace bounds.
-									trace.endpos[2] += temp_mins[2] - bot_ent->mins[2];
-
-									{
-										vec3_t down_pos;
-										VectorCopy(trace.endpos, down_pos);
-										down_pos[2] -= (objective->ent->maxs[2] - objective->ent->mins[2]);
-										trace = bi.trace(trace.endpos, bot_ent->mins, bot_ent->maxs, down_pos, bot_ent, MASK_PLAYERSOLID);
-										VectorCopy(trace.endpos, goal->pos);
-#ifdef BOT_DEBUG
-										bots.goal_debug_spheres[bot_index] = DrawDebugSphere(goal->pos, 18.0f, 1.0f, 0.5f, 0.0f, 20.0f, bots.goal_debug_spheres[bot_index]);
-#endif
-									}
-
-									if (bot_debug->value)
-											bi.dprintf("Bot %d: Going for cap.\n", bot_index);
-								}
-								wander = false;
-								break;
-							}
-						}
+						BotDoSomethingSilly(bot_index);
+						wander = false;
 					}
 					else
 					{
-						if (bot_debug->value)
-							bi.dprintf("No objectives available.\n");
+						// Weight goals based on current conditions
+						for (i = 0; i < MAX_BOT_OBJECTIVES; ++i)
+						{
+							bot_objective_t *objective = g_bot_objectives + i;
+
+							objective->weight = 0.0;
+
+							if (objective->active)
+							{
+								qboolean same_team = (bi.GetTeam(objective->ent) == bot_team);
+								if (objective->objective_type == BOT_OBJECTIVE_TYPE_BASE)
+								{
+									if (goal->has_flag && (bots.game_mode == CTFTYPE_SIEGE || bots.game_mode == CTFTYPE_ITEMHUNT || (bots.game_mode == CTFTYPE_1FLAG && !same_team) || (bots.game_mode != CTFTYPE_1FLAG && same_team)))
+									{
+										objective->weight = 1.0; // todo: Divide by distance?
+									}
+								}
+								else if (objective->objective_type == BOT_OBJECTIVE_TYPE_FLAG)
+								{
+									if (!same_team)
+									{
+										objective->weight = 1.0; // todo: Divide by distance?
+									}
+								}
+
+								total_objective_weights += objective->weight;
+							}
+						}
+
+						if (total_objective_weights > 0.0)
+						{
+							float random_weight = nu_rand(total_objective_weights);
+							total_objective_weights = 0.0;
+
+							for (i = 0; i < MAX_BOT_OBJECTIVES; ++i)
+							{
+								bot_objective_t *objective = g_bot_objectives + i;
+								total_objective_weights += objective->weight;
+								if (total_objective_weights >= random_weight)
+								{
+									if (objective->objective_type == BOT_OBJECTIVE_TYPE_FLAG)
+									{
+										if (bi.GetTeam(objective->ent) == bot_team)
+										{
+											BotDefendFlag(bot_index, objective->ent, (int)nu_rand(30000.0f)); // 0-30s
+										}
+										else
+										{
+											vec3_t goal_pos;
+
+											if (bot_debug->value)
+												bi.dprintf("Bot %d: Going for flag.\n", bot_index);
+
+											VectorCopy(objective->ent->s.origin, goal_pos);
+											goal_pos[2] += objective->ent->mins[2] - bot_ent->mins[2] + 1.0; // flag mins aren't as low as player mins, so we need to make sure this is reachable, otherwise traces will fail.
+											BotSetGoal(bot_index, BOT_GOAL_REACH_POSITION, goal_pos, objective->ent, true, 10000 + (int)nu_rand(60000.0f)); // 10-70s. TODO: Grab flag type
+										}
+									}
+									else if (objective->objective_type == BOT_OBJECTIVE_TYPE_BASE)
+									{
+										trace_t trace;
+										vec3_t target_center;
+										int axis;
+										vec3_t temp_mins, temp_maxs;
+
+										// Base might be in some kind of tight location, like under a platform, so make a really small mins/maxs to check for the ground position
+										VectorCopy(bot_ent->mins, temp_mins);
+										VectorCopy(bot_ent->maxs, temp_maxs);
+										temp_mins[2] = 0;
+										temp_maxs[2] = 12;
+
+										BotSetGoal(bot_index, BOT_GOAL_REACH_POSITION, objective->ent->s.origin, objective->ent, true, (int)nu_rand(70000.0f)); // 0-70s. TODO: Grab flag type
+
+										// Bases have a pos of 0 but mins/maxs define a volume, so randomly pick a location in that volume.  Guess that'll give us some slight variation on flag grabs and such as well.
+										for (axis = 0; axis < 3; ++axis)
+										{
+											float min = objective->ent->mins[axis];
+											float max = objective->ent->maxs[axis];
+
+											goal->pos[axis] += min + nu_rand(max - min) * 0.5; // only do 50% of the trigger volume to avoid having targets on sloped walls.
+											// Center of triggers is not at the entity origin, which is usually 0, 0, 0, but instead at the average of mins + maxs
+											target_center[axis] = objective->ent->s.origin[axis] + (objective->ent->mins[axis] + objective->ent->maxs[axis]) * 0.5;
+										}
+
+										// Sometimes the base triggers go beyond the playable space, so cast from the center out.
+										trace = bi.trace(target_center, temp_mins, temp_maxs, goal->pos, bot_ent, MASK_PLAYERSOLID);
+
+										// Sometimes the base is centered in solid ground (ex: pbcup.bsp) or is right on the ground (routez.bsp), so we need to move up a bit
+										if (trace.startsolid)
+										{
+											target_center[2] += 32.0;
+											trace = bi.trace(target_center, temp_mins, temp_maxs, goal->pos, bot_ent, MASK_PLAYERSOLID);
+
+											if (trace.startsolid)
+											{
+												target_center[2] += 32.0; // move up even more
+												trace = bi.trace(target_center, temp_mins, temp_maxs, goal->pos, bot_ent, MASK_PLAYERSOLID);
+											}
+										}
+
+										// Set our end pos to what it would have been if we used the larger trace bounds.
+										trace.endpos[2] += temp_mins[2] - bot_ent->mins[2];
+
+										{
+											vec3_t down_pos;
+											VectorCopy(trace.endpos, down_pos);
+											down_pos[2] -= (objective->ent->maxs[2] - objective->ent->mins[2]);
+											trace = bi.trace(trace.endpos, bot_ent->mins, bot_ent->maxs, down_pos, bot_ent, MASK_PLAYERSOLID);
+											VectorCopy(trace.endpos, goal->pos);
+	#ifdef BOT_DEBUG
+											bots.goal_debug_spheres[bot_index] = DrawDebugSphere(goal->pos, 18.0f, 1.0f, 0.5f, 0.0f, 20.0f, bots.goal_debug_spheres[bot_index]);
+	#endif
+										}
+
+										if (bot_debug->value)
+										{
+											bi.dprintf("Bot %d: Going for cap.\n", bot_index);
+										}
+									}
+									wander = false;
+									break;
+								}
+							}
+						}
+						else
+						{
+							if (bot_debug->value)
+								bi.dprintf("No objectives available.\n");
+						}
 					}
 
 //					if (g_bot_num_objectives > 0)

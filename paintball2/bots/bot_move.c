@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 extern usercmd_t g_lastplayercmd;
 extern usercmd_t g_playercmd;
+extern cvar_t *bot_careful;
 
 // Spin and move randomly. :)
 void BotDance (unsigned int botindex)
@@ -127,8 +128,9 @@ void BotRandomStrafeJump (unsigned int botindex, int msec)
 }
 
 
-//#define WAYPOINT_REACHED_EPSILON_SQ		2304.0f // 48 * 48
-#define WAYPOINT_REACHED_EPSILON_SQ		1024.0f // 32 * 32
+//#define WAYPOINT_REACHED_EPSILON_SQ			2304.0f // 48 * 48
+#define WAYPOINT_REACHED_EPSILON_SQ				1024.0f // 32 * 32
+#define WAYPIONT_REACHED_CAREFUL_EPSILON_SQ		256.0f // 16*16
 
 void BotFollowWaypoint (unsigned int bot_index, int msec)
 {
@@ -153,6 +155,7 @@ void BotFollowWaypoint (unsigned int bot_index, int msec)
 			float test_threshold = 20.0f;
 			const vec_t *current_waypoint_pos = movement->waypoint_path.end_pos;
 			const vec_t *next_waypoint_pos = movement->waypoint_path.end_pos;
+			qboolean careful = bot_careful->value > 0.0; // TODO: Flag careful paths if bot fails to reach next waypoint multiple times.
 
 			VectorSubtract(g_bot_waypoints.positions[waypoint_index], ent->s.origin, bot_to_current_waypoint);
 
@@ -181,7 +184,7 @@ void BotFollowWaypoint (unsigned int bot_index, int msec)
 					waypoint_passed = true;
 			}
 
-			if (waypoint_passed || dist_sq <= WAYPOINT_REACHED_EPSILON_SQ)
+			if (waypoint_passed || dist_sq <= WAYPIONT_REACHED_CAREFUL_EPSILON_SQ || (dist_sq <= WAYPOINT_REACHED_EPSILON_SQ && !careful))
 			{
 				if (waypoint_passed)
 					DrawDebugSphere(g_bot_waypoints.positions[waypoint_index], 8.0f, 0.8f, 1.0f, 0.0f, 1.0f, -1);
@@ -233,13 +236,19 @@ void BotFollowWaypoint (unsigned int bot_index, int msec)
 			if (movement->desired_angles[PITCH] > 15.0f)
 				movement->desired_angles[PITCH] = 15.0f;
 
-			VectorSubtract(current_waypoint_pos, ent->s.origin, vec_diff);
+			// Take the current velocity into account -- move toward the objective based on where we'd be 0.15s in the future to help with overshooting.
+			{
+				vec3_t origin_plus_velocity;
+				VectorMA(ent->s.origin, 0.15f, movement->velocity, origin_plus_velocity);
+				VectorSubtract(current_waypoint_pos, origin_plus_velocity, vec_diff);
+			}
 
 			// Figure out where the target is relative to our current facing
 			AngleVectors(ent->s.angles, forward, right, NULL);
 			forward_dot = DotProduct2(forward, vec_diff);
 			right_dot = DotProduct2(right, vec_diff);
 			dist = VectorLength(vec_diff);
+
 			if (vec_diff[2] / dist > 0.7)
 			{
 				check_for_ladder = true;
@@ -258,14 +267,13 @@ void BotFollowWaypoint (unsigned int bot_index, int msec)
 					movement->forward = -MOVE_SPEED;
 			}
 
-
 			if (right_dot > test_threshold)
 				movement->side = MOVE_SPEED;
 			else if (right_dot < -test_threshold)
 				movement->side = -MOVE_SPEED;
 
 			// 50% chance of jumping each frame... in case we're not touching the ground or something
-			if (movement->need_jump && nu_rand(1.0f) > 0.5f)
+			if ((movement->need_jump && nu_rand(1.0f) > 0.5f) && !careful)
 				movement->up = MOVE_SPEED;
 			else
 				movement->up = 0;
@@ -679,10 +687,13 @@ void BotMove (unsigned int botindex, int msec)
 	{
 		edict_t *ent = bots.ents[botindex];
 		botmovedata_t *movement = bots.movement + botindex;
+		vec3_t start_position;
 
 		if (ent)
 		{
 			qboolean move = true;
+
+			VectorCopy(ent->s.origin, start_position);
 
 			if (bot_debug->value && skill->value < -1.0f)
 			{
@@ -703,6 +714,7 @@ void BotMove (unsigned int botindex, int msec)
 				float yaw = ent->s.angles[YAW];
 				float pitch = ent->s.angles[PITCH] * 3.0f;
 				float ucmd_dt = BOT_UCMD_TIME / 1000.0f;
+				int time_diff_ms = 0;
 
 				movement->time_since_last_turn += msec;
 
@@ -736,6 +748,7 @@ void BotMove (unsigned int botindex, int msec)
 
 				while (movement->timeleft > 0)
 				{
+					time_diff_ms += BOT_UCMD_TIME;
 					movement->timeleft -= BOT_UCMD_TIME;
 					yaw += movement->yawspeed * ucmd_dt;
 					pitch += movement->pitchspeed * ucmd_dt;
@@ -751,6 +764,8 @@ void BotMove (unsigned int botindex, int msec)
 				}
 
 				movement->last_yaw = yaw;
+				VectorSubtract(ent->s.origin, start_position, movement->velocity);
+				VectorScale(movement->velocity, 1000.0 / time_diff_ms, movement->velocity);
 			}
 		}
 

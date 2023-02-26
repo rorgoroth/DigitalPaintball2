@@ -27,6 +27,7 @@ typedef enum {
 	BOT_GOAL_WANDER = 0,
 	BOT_GOAL_REACH_POSITION,
 	BOT_GOAL_DEFEND_FLAG,
+	BOT_GOAL_STOP_AND_WAIT, // for between rounds, to make them look more human
 	BOT_GOAL_MAX_COUNT
 } botgoaltype_t;
 
@@ -39,13 +40,14 @@ typedef struct {
 	qboolean		active;
 	int				timeleft_msec;
 	qboolean		has_flag;
+	qboolean		end_on_path_complete; // If true, select a new goal when reaching the location.  If not, stop at location until goal time is complete.
 } botgoal_t;
 
 
 void BotAddObjective (bot_objective_type_t objective_type, int player_index, int team_index, const edict_t *ent);
 void BotRemoveObjective (bot_objective_type_t objective_type, const edict_t *ent);
 void BotClearObjectives (void);
-void BotSetGoal (int bot_index, botgoaltype_t goal, vec3_t position);
+void BotSetGoal (int bot_index, botgoaltype_t goaltype, vec3_t position, const edict_t *target_ent, qboolean end_on_path_complete, int time_msec);
 void BotRetryGoal (int bot_index);
 void BotClearGoals (void);
 void BotPathfindComplete (int bot_index);

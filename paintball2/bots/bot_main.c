@@ -41,7 +41,8 @@ cvar_t *bots_vs_humans = NULL;
 cvar_t *bot_min_players = NULL;
 cvar_t *bot_min_bots = NULL;
 cvar_t *sv_gravity = NULL;
-qboolean g_admin_modified_bots = false;
+cvar_t *bot_careful = NULL; // testing making bots go slow and carefully.
+
 #ifdef _DEBUG
 cvar_t *bot_remove_near_waypoints = NULL;
 #endif
@@ -133,6 +134,7 @@ void BotInitLibrary (void)
 	memset(&bots, 0, sizeof(bots));
 	skill = bi.cvar("skill", "0", 0);
 	bot_debug = bi.cvar("bot_debug", "0", 0);
+	bot_careful = bi.cvar("bot_careful", "0", 0);
 	bots_vs_humans = bi.cvar("bots_vs_humans", "0", 0);
 	bot_min_players = bi.cvar("bot_min_players", "0", 0);
 	bot_min_bots = bi.cvar("bot_min_bots", "0", 0);
@@ -171,7 +173,7 @@ void BotUpdateConnections (int msec)
 		// Go back to using bot settings if everybody has disconnected.
 		if (num_players_total == 0)
 		{
-			g_admin_modified_bots = false;
+			bots.admin_modified_bots = false;
 		}
 
 		g_time_to_next_connection_check_ms = 3000 + nu_rand(1000); // Every 3 - 4 seconds, check to see if we need to add a bot
@@ -217,7 +219,7 @@ void BotUpdateConnections (int msec)
 		}
 
 		// If an admin explicitly adds or removes bots, ignore the settings and just leave the bots as-is
-		if (bots_needed >= 0 && !g_admin_modified_bots)
+		if (bots_needed >= 0 && !bots.admin_modified_bots)
 		{
 			int bot_diff;
 
@@ -258,7 +260,7 @@ void BotRunFrame (int msec, float level_time)
 		bots_vs_humans->modified = false;
 		bot_min_players->modified = false;
 		bot_min_bots->modified = false;
-		g_admin_modified_bots = false;
+		bots.admin_modified_bots = false;
 	}
 }
 
@@ -406,7 +408,7 @@ void AddBot (const char *name, qboolean manually_added)
 
 		if (manually_added)
 		{
-			g_admin_modified_bots = true;
+			bots.admin_modified_bots = true;
 		}
 	}
 	else
