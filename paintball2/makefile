@@ -124,6 +124,16 @@ BUILD=27
 MOUNT_DIR=.
 BINDIR=./build
 
+
+
+ifneq ($(filter q2debug,$(MAKECMDGOALS)),)
+ BINDIR=~/quake2
+endif
+
+ifneq ($(filter q2release,$(MAKECMDGOALS)),)
+ BINDIR=~/quake2
+endif
+
 BUILD_DEBUG_DIR=build_debug
 BUILD_RELEASE_DIR=build_release
 BUILD_Q2_DEBUG_DIR=build_q2_debug
@@ -253,7 +263,15 @@ endif
 ifeq ($(OSTYPE),Linux)
 ifeq ($(strip $(BUILD_ALSA_SND)),YES)
 
+
+
+
+
+
+
+
 ALSALDFLAGS=-lasound
+
 endif
 endif
 
@@ -369,7 +387,7 @@ endif
 ifneq ($(VERBOSE),YES)
 	@-$(MAKE) --silent targets BUILDDIR=$(BUILD_DEBUG_DIR) CFLAGS="$(DEBUG_CFLAGS)"
 else
-	$(MAKE) targets BUILDDIR=$(BUILD_DEBUG_DIR) CFLAGS="$(DEBUG_CFLAGS)"
+	$(MAKE) targets BINDIR=$(BINDIR) BUILDDIR=$(BUILD_DEBUG_DIR) CFLAGS="$(DEBUG_CFLAGS)"
 endif
 
 release:
@@ -401,7 +419,7 @@ endif
 ifneq ($(VERBOSE),YES)
 	@-$(MAKE) --silent targets BUILDDIR=$(BUILD_RELEASE_DIR) CFLAGS="$(RELEASE_CFLAGS)"
 else
-	$(MAKE) targets BUILDDIR=$(BUILD_RELEASE_DIR) CFLAGS="$(RELEASE_CFLAGS)"
+	$(MAKE) targets BINDIR=$(BINDIR) BUILDDIR=$(BUILD_RELEASE_DIR) CFLAGS="$(RELEASE_CFLAGS)"
 endif
 
 q2debug:
@@ -433,7 +451,7 @@ endif
 ifneq ($(VERBOSE),YES)
 	@-$(MAKE) --silent targets BUILDDIR=$(BUILD_Q2_DEBUG_DIR) CFLAGS="$(Q2_DEBUG_CFLAGS)"
 else
-	$(MAKE) targets BUILDDIR=$(BUILD_Q2_DEBUG_DIR) CFLAGS="$(Q2_DEBUG_CFLAGS)"
+	$(MAKE) targets BINDIR=$(BINDIR) BUILDDIR=$(BUILD_Q2_DEBUG_DIR) CFLAGS="$(Q2_DEBUG_CFLAGS)"
 endif
 
 targets: $(TARGETS)
@@ -777,8 +795,7 @@ distclean:
 install:
 	@echo Copying files to your home dir
 	@echo ......
-	@mkdir -pv ~/paintball2
-	@cp -rv $(BINDIR)/* ~/paintball2
+	@cp -rv $(BINDIR) ~/paintball2
 	@cp -rv linux/paintball2.run ~/paintball2
 	@chmod +x ~/paintball2/paintball2.run
 ifeq ($(strip $(BUILD_DEDICATED)),YES)
