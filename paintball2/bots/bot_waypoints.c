@@ -702,7 +702,7 @@ void BotAddPotentialWaypointFromPmove (player_observation_t *observation, const 
 	}
 
 	// This block of code does nothing.  Ignore it for now.
-#ifdef _DEBUG
+#if 0 //def _DEBUG
 	if (bot_remove_near_waypoints->value)
 	{
 		float sq_dist;

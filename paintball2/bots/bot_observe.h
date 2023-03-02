@@ -30,7 +30,10 @@ typedef struct {
 	signed char side;
 	signed char up;
 	unsigned short msec;
-	short angle;
+	short angle_yaw;
+	short angle_pitch;
+	short x,y,z; // Position - todo: separate struct that stores every X frames to save memory, maybe.
+	byte buttons;
 } player_input_data_t;
 
 
@@ -45,6 +48,7 @@ typedef struct {
 	float				last_waypoint_time;
 	vec3_t				last_waypoint_pos;
 	qboolean			was_on_ladder;
+	float				time_started;
 } player_observation_t;
 
 

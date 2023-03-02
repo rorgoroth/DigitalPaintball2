@@ -28,11 +28,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "bot_debug.h"
 
 
+// These aren't used anymore -- not precise enough.  Now we only record input on spawns.
 #define PLAYER_OBSERVE_MIN_MOVE_SPEED 3 // start recording players moving this fast
-
 #define PLAYER_PATH_MIN_DIST 250 // quake units.  to cut back on short paths from strafing back and forth.
 
-
+extern cvar_t *bot_use_player_input;
 
 player_observation_t		g_player_observations[MAX_PLAYERS_TO_RECORD];
 player_recorded_paths_t		g_player_paths;
@@ -44,20 +44,16 @@ usercmd_t g_playercmd; // used for BotCopyPlayer
 
 void BotInitObservations (const char *mapname)
 {
-//	int i;
-
-	// Clear out any loaded paths
-	if (g_player_paths.paths)
+	if (!g_player_paths.path_capacity)
 	{
-		/* Paths cleared out because they're allocated with TAG_LEVEL?
-		for (i = 0; i < g_player_paths.num_paths; ++i)
-		{
-			g_player_paths.paths[i]
-		}*/
+		g_player_paths.path_capacity = MAX_RECORDED_PATHS;
+		g_player_paths.paths = bi.TagMalloc(sizeof(player_recorded_path_t) * MAX_RECORDED_PATHS, 0/*TAG_LEVEL*/);
 	}
 
+	// Each path allocation has been allocated with TAG_LEVEL, so it *should* free up after level change.
+
 	g_player_paths.num_paths = 0;
-// todo: load/save paths on map change.
+	// TODO: load/save paths on map change.
 }
 
 
@@ -65,12 +61,6 @@ void BotAddPlayerObservation (player_observation_t *observation)
 {
 	int i, total_points = observation->current_index;
 	int path_index = g_player_paths.num_paths;
-
-	if (!g_player_paths.path_capacity)
-	{
-		g_player_paths.path_capacity = MAX_RECORDED_PATHS;
-		g_player_paths.paths = bi.TagMalloc(sizeof(player_recorded_path_t) * MAX_RECORDED_PATHS, 0/*TAG_LEVEL*/);
-	}
 
 	if (VectorSquareDistance(observation->start_pos, observation->end_pos) < PLAYER_PATH_MIN_DIST * PLAYER_PATH_MIN_DIST)
 	{
@@ -98,10 +88,12 @@ void BotAddPlayerObservation (player_observation_t *observation)
 		recorded_path->time = total_msec / 1000.0f;
 		recorded_path->input_data = input_data;
 		recorded_path->total_points = total_points;
+
 		if (bot_debug->value)
 		{
 			bi.dprintf("Path %d added.\n", path_index);
 		}
+
 		++g_player_paths.num_paths;
 
 		if (bot_debug->value)
@@ -130,12 +122,21 @@ float XYPMVelocitySquared (const short *vel)
 }
 
 
-// TODO: Call this when the player dies:
-void BotCancelObservation (player_observation_t *observation)
+void BotCancelObservation (const edict_t *ent)
 {
-	bi.dprintf("Observation path cancelled.\n");
-	observation->path_active = false;
-	observation->current_index = 0;
+	int player_index = bi.GetPlayerIndexFromEnt(ent);
+
+	if (player_index < MAX_PLAYERS_TO_RECORD)
+	{
+		player_observation_t *observation = g_player_observations + player_index;
+
+		if (observation->path_active)
+		{
+			bi.dprintf("Observation path cancelled.\n");
+			observation->path_active = false;
+			observation->current_index = 0;
+		}
+	}
 }
 
 
@@ -161,11 +162,17 @@ void BotConvertPmoveToObservationPoint (player_input_data_t *input_data, const e
 	else if (side < -400)
 		side = -400;
 
-	input_data->angle = pm->cmd.angles[YAW] + ent->client->ps.pmove.delta_angles[YAW]; // We may need both angles for water movement...
+	input_data->angle_yaw = pm->cmd.angles[YAW] + ent->client->ps.pmove.delta_angles[YAW];
+	input_data->angle_pitch = pm->cmd.angles[PITCH] + ent->client->ps.pmove.delta_angles[PITCH];
 	input_data->forward = forward / PMOVE_8BIT_SCALE; // no need for this much precision.  8 bits should be plenty, even if a joystick is used.
 	input_data->side = side / PMOVE_8BIT_SCALE;
 	input_data->up = up / PMOVE_8BIT_SCALE;
 	input_data->msec = pm->cmd.msec;
+	input_data->buttons = pm->cmd.buttons;
+	// Should probably only record positions at a smaller interval to save memory, but just save every input frame for testing for now.
+	input_data->x = ent->s.origin[0] * 8.0f;
+	input_data->y = ent->s.origin[1] * 8.0f;
+	input_data->z = ent->s.origin[2] * 8.0f;
 }
 
 
@@ -209,20 +216,27 @@ void BotAddObservationPoint (player_observation_t *observation, const edict_t *e
 	}
 }
 
+#define TIME_SINCE_SPAWN_TO_RECORD_PLAYER_INPUT 2.0f
 
 void BotAddPotentialWaypointFromPmove(player_observation_t *observation, const edict_t *ent, const pmove_t *pm);
 
 // Called for each player input packet sent after pmove is calculated, while the player is alive
 void BotObservePlayerInput (unsigned int player_index, const edict_t *ent, const pmove_t *pm)
 {
-	if (bots.count < 1)
+	//float time_since_round_start;
+
+	if (bots.count < 1 || !bot_use_player_input->value)
 	{
 		return;
 	}
 
+	//time_since_round_start = bots.level_time - bots.round_start_time;
 	// todo: cvar to disable this.
 	// todo: reset observation data on player disconnect/map change/etc.
 	//BotAddPotentialNavmeshFromPmove(ent, pm);
+
+	// For now, record player input since start of round, since the bots will spawn exactly where players spawn and we can just play the input back for round start behavior.
+
 
 	if (player_index < MAX_PLAYERS_TO_RECORD)
 	{
@@ -233,30 +247,49 @@ void BotObservePlayerInput (unsigned int player_index, const edict_t *ent, const
 #if 1 //  -- TODO: Figure out a better way for bots to follow player paths
 		if (!observation->path_active)
 		{
-			float xy_velocity_sq = XYPMVelocitySquared(pm->s.velocity);
+			// Unfortunately, the way round spawning works, we don't know if the player just spawned, so check for a large jump in position and assume a spawn happened
+			float dist = Distance(ent->s.origin, observation->last_pos);
+			qboolean spawned_or_teleported = false;
+
+			if (dist > 128.0f) // 128+ unit difference in one frame, we must have respawned or teleported.
+			{
+				spawned_or_teleported = true;
+			}
+
+			VectorCopy(ent->s.origin, observation->last_pos);
+
+			//float xy_velocity_sq = XYPMVelocitySquared(pm->s.velocity);
 
 			// todo: start on jump as well
-			if (xy_velocity_sq > PLAYER_OBSERVE_MIN_MOVE_SPEED * PLAYER_OBSERVE_MIN_MOVE_SPEED && bi.IsGroundEntityWorld(pm->groundentity))
+			//if (xy_velocity_sq > PLAYER_OBSERVE_MIN_MOVE_SPEED * PLAYER_OBSERVE_MIN_MOVE_SPEED && bi.IsGroundEntityWorld(pm->groundentity))
+			if (spawned_or_teleported)
 			{
 				if (bot_debug->value)
 				{
 					bi.dprintf("Starting path\n");
 				}
+
 				VectorCopy(ent->s.origin, observation->start_pos);
 				observation->path_active = true;
 				observation->current_index = 0;
+				observation->time_started = bots.level_time;
 			}
 		}
 		else
 		{
-			if (XYPMVelocitySquared(pm->s.velocity) < PLAYER_OBSERVE_MIN_MOVE_SPEED * PLAYER_OBSERVE_MIN_MOVE_SPEED && bi.IsGroundEntityWorld(pm->groundentity))
+			if (bots.level_time - observation->time_started > TIME_SINCE_SPAWN_TO_RECORD_PLAYER_INPUT) // Ensure we wait a couple seconds before seeing if the player has stopped
 			{
-				BotCompleteObservationPath(ent, observation);
+				if (XYPMVelocitySquared(pm->s.velocity) < PLAYER_OBSERVE_MIN_MOVE_SPEED * PLAYER_OBSERVE_MIN_MOVE_SPEED && bi.IsGroundEntityWorld(pm->groundentity))
+				{
+					BotCompleteObservationPath(ent, observation);
+				}
 			}
 		}
 
 		if (observation->path_active)
+		{
 			BotAddObservationPoint(observation, ent, pm);
+		}
 
 		// temp debug
 		{
@@ -295,4 +328,17 @@ void FreeObservations (void)
 		g_player_paths.path_capacity = 0;
 		g_player_paths.num_paths = 0;
 	}
+}
+
+
+// TODO: Finish this and cancel on map change
+void BotCancelObservations()
+{
+
+}
+
+
+// TODO: Complete observations on round end.
+void BotCompleteObservations()
+{
 }

@@ -46,6 +46,7 @@ static void BotHandleDisconnect (const edict_t *ent)
 		}
 	}
 
+	BotCancelObservation(ent);
 	// todo: BotUpdateGoals(); // Index may be offset for some bots, so we need to update all bots
 }
 
@@ -69,6 +70,7 @@ void BotHandleRoundStart (void)
 {
 	int bot_index;
 	bots.between_rounds = false;
+	bots.round_start_time = bots.level_time;
 
 	// Bots don't have a flag when the round starts.
 	for (bot_index = 0; bot_index < bots.count; ++bot_index)
@@ -120,6 +122,12 @@ void BotHandleCap (edict_t *ent, edict_t *flag)
 }
 
 
+void BotHandleKill (edict_t *victim, edict_t *inflictor, edict_t *killer)
+{
+	BotCancelObservation(victim);
+}
+
+
 void BotHandleGameEvent (game_event_t event, edict_t *ent, void *data1, void *data2)
 {
 	switch (event)
@@ -144,6 +152,10 @@ void BotHandleGameEvent (game_event_t event, edict_t *ent, void *data1, void *da
 		break;
 	case EVENT_ROUNDOVER:
 		BotHandleRoundOver();
+		break;
+	case EVENT_KILL:
+		BotHandleKill(ent, (edict_t *)data1, (edict_t *)data2); // victim, inflictor, killer
+		break;
 	}
 	// Events like round starts, flag grabs, eliminations, etc. will be passed in here
 }

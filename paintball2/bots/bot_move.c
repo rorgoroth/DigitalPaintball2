@@ -522,7 +522,7 @@ qboolean BotMoveTowardPlayerPath (unsigned int botindex, int msec)
 
 			movement->timeleft += msec;
 			g_player_paths.paths[path_index].start_pos;
-			yaw = SHORT2ANGLE(g_player_paths.paths[path_index].input_data[0].angle); // Just aim the direction of the first point instantly for now -- maybe smooth later
+			yaw = SHORT2ANGLE(g_player_paths.paths[path_index].input_data[0].angle_yaw); // Just aim the direction of the first point instantly for now -- maybe smooth later
 			memset(&cmd, 0, sizeof(cmd));
 			movement->path_info.msec_to_reach_start += msec;
 
@@ -622,16 +622,64 @@ qboolean BotMoveTowardPlayerPath (unsigned int botindex, int msec)
 }
 
 
+qboolean BotSelectRandomPlayerPathAtPosition(int botindex, const vec3_t pos)
+{
+	botmovedata_t *movement = bots.movement + botindex;
+	int pathindex;
+	int possible_path_indexes[MAX_RECORDED_PATHS];
+	int paths_found = 0;
+
+	for (pathindex = 0; pathindex < g_player_paths.num_paths; ++pathindex)
+	{
+		float distsq = VectorSquareDistance(pos, g_player_paths.paths[pathindex].start_pos);
+
+		if (distsq < 2.0) // Should be exactly 0, but add a bit of epsilon, just in case.
+		{
+			possible_path_indexes[paths_found] = pathindex;
+			++paths_found;
+		}
+	}
+
+	if (paths_found > 0)
+	{
+		int r = nu_rand(paths_found);
+		int pathindex = possible_path_indexes[r];
+		movement->path_info.on_path = true;
+		movement->path_info.msec_to_reach_start = 0;
+		movement->path_info.path_index = pathindex;
+		movement->path_info.index_in_path = 0;
+		movement->path_info.started = true;
+		if (bot_debug->value)
+			bi.dprintf("bot %d: Found %d paths at this position.  Randomly selecting path index %d", botindex, paths_found, pathindex);
+		return true;
+	}
+	else
+	{
+		// Found no path, bot will wander aimlessly.
+		if (bot_debug->value)
+			bi.dprintf("Found no paths at spawn/teleport.");
+		return false;
+	}
+}
+
+
 qboolean BotFollowPlayerPaths (unsigned int botindex, int msec)
 {
 	botmovedata_t *movement = bots.movement + botindex;
 	edict_t *ent = bots.ents[botindex];
 
+	// Check for respawn or teleport to start a new path.
+	if (Distance(ent->s.origin, movement->last_pos) > 128.0f) // Large jump in distance, probably a teleport or respawn.
+	{
+		BotSelectRandomPlayerPathAtPosition(botindex, ent->s.origin);
+	}
+
+	/*
 	if ((!movement->path_info.on_path || !movement->path_info.started))
 	{
 		if (!BotMoveTowardPlayerPath(botindex, msec))
 			return false;
-	}
+	}*/
 
 	if (movement->path_info.on_path && movement->path_info.started)
 	{
@@ -655,13 +703,31 @@ qboolean BotFollowPlayerPaths (unsigned int botindex, int msec)
 			}
 
 			msec_left -= input_msec;
-			cmd.angles[YAW] = input->angle - ent->client->ps.pmove.delta_angles[YAW];
+			cmd.angles[YAW] = input->angle_yaw - ent->client->ps.pmove.delta_angles[YAW];
+			cmd.angles[PITCH] = input->angle_pitch - ent->client->ps.pmove.delta_angles[PITCH];
 			cmd.msec = input_msec;
 			cmd.forwardmove = (short)(input->forward * PMOVE_8BIT_SCALE);
 			cmd.sidemove = (short)(input->side * PMOVE_8BIT_SCALE);
 			cmd.upmove = (short)(input->up * PMOVE_8BIT_SCALE);
-			cmd.buttons = 0;
+			cmd.buttons = input->buttons;
 			bi.ClientThink(ent, &cmd);
+
+			// Check to see if the bot varied too much from the player's original path.  If so, stop the input playback.
+			{
+				vec3_t player_pos;
+
+				player_pos[0] = input->x / 8.0f;
+				player_pos[1] = input->y / 8.0f;
+				player_pos[2] = input->z / 8.0f;
+
+				if (DistanceSquared(player_pos, ent->s.origin) > 4096.0) // 64 units.
+				{
+					movement->path_info.on_path = false;
+					if (bot_debug->value)
+						bi.dprintf("bot %d: Player input path distance too large, stopping follow.\n", botindex);
+					// TOmaybeDO: Should probably accumulate failure counts, as original path might have run into a dynamic entity and should be removed from consideration.
+				}
+			}
 
 			++index;
 		}
@@ -705,10 +771,10 @@ void BotMove (unsigned int botindex, int msec)
 				move = false;
 			}
 
-			/*if (move && BotFollowPlayerPaths(botindex, msec)) // TODO: Testing
+			if (move && BotFollowPlayerPaths(botindex, msec)) // TODO: Testing
 			{
 			}
-			else*/
+			else
 			{
 				usercmd_t cmd;
 				float yaw = ent->s.angles[YAW];
@@ -769,6 +835,7 @@ void BotMove (unsigned int botindex, int msec)
 			}
 		}
 
+		VectorCopy(ent->s.origin, movement->last_pos);
 		if (movement->time_til_try_path > 0)
 			movement->time_til_try_path -= msec;
 	}

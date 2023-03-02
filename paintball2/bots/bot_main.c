@@ -42,6 +42,7 @@ cvar_t *bot_min_players = NULL;
 cvar_t *bot_min_bots = NULL;
 cvar_t *sv_gravity = NULL;
 cvar_t *bot_careful = NULL; // testing making bots go slow and carefully.
+cvar_t *bot_use_player_input = NULL;
 
 #ifdef _DEBUG
 cvar_t *bot_remove_near_waypoints = NULL;
@@ -107,7 +108,6 @@ EXPORT bot_export_t *GetBotAPI (bot_import_t *import)
 	g_bot_export.AddObjective = BotAddObjective;
 	g_bot_export.RemoveObjective = BotRemoveObjective;
 	g_bot_export.ClearObjectives = BotClearObjectives;
-	g_bot_export.PlayerDie = BotPlayerDie; // todo
 	g_bot_export.SetDefendingTeam = BotSetDefendingTeam;
 	g_bot_export.GetRandomWaypointPositions = BotGetRandomWaypointPositions;
 	g_bot_export.RemoveBot = RemoveBot;
@@ -135,6 +135,7 @@ void BotInitLibrary (void)
 	skill = bi.cvar("skill", "0", 0);
 	bot_debug = bi.cvar("bot_debug", "0", 0);
 	bot_careful = bi.cvar("bot_careful", "0", 0);
+	bot_use_player_input = bi.cvar("bot_use_player_input", "1", 0);
 	bots_vs_humans = bi.cvar("bots_vs_humans", "0", 0);
 	bot_min_players = bi.cvar("bot_min_players", "0", 0);
 	bot_min_bots = bi.cvar("bot_min_bots", "0", 0);

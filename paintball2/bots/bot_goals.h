@@ -47,12 +47,11 @@ typedef struct {
 void BotAddObjective (bot_objective_type_t objective_type, int player_index, int team_index, const edict_t *ent);
 void BotRemoveObjective (bot_objective_type_t objective_type, const edict_t *ent);
 void BotClearObjectives (void);
-void BotSetGoal (int bot_index, botgoaltype_t goaltype, vec3_t position, const edict_t *target_ent, qboolean end_on_path_complete, int time_msec);
+void BotSetGoal (int bot_index, botgoaltype_t goaltype, const vec3_t position, const edict_t *target_ent, qboolean end_on_path_complete, int time_msec);
 void BotRetryGoal (int bot_index);
 void BotClearGoals (void);
 void BotPathfindComplete (int bot_index);
 void BotGoalWander (int bot_index, int time_ms);
-void BotPlayerDie (int player_index, const edict_t *ent);
 void BotSetDefendingTeam (int defending_team);
 
 #endif // _BOT_GOALS_H_

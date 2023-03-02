@@ -1455,7 +1455,7 @@ typedef enum {
 	EVENT_ENTER = 1,
 	EVENT_JOIN = 2,
 	EVENT_KILL = 3,
-	EVENT_DEATH = 4,
+	// Never used? EVENT_DEATH = 4,
 	EVENT_GRAB = 5,
 	EVENT_CAP = 6,
 	EVENT_ROUNDSTART = 7,

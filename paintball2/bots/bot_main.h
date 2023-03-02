@@ -69,6 +69,8 @@ void BotStopMoving (int bot_index);
 
 // bot_observe.c
 void BotObservePlayerInput (unsigned int player_index, const edict_t *ent, const pmove_t *pm);
+void BotCancelObservation (const edict_t *ent);
+void BotCancelObservations (void);
 
 // bot_navmesh.c
 void BotAddPotentialNavmeshFromPmove (const edict_t *ent, const pmove_t *pm);

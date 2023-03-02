@@ -105,12 +105,6 @@ void BotClearObjectives (void)
 }
 
 
-void BotPlayerDie (int player_index, const edict_t *ent)
-{
-	// Unused for now, but can be called if we need to do something when a player dies (ex: chat messages)
-}
-
-
 // For siege mode -- called on round start
 void BotSetDefendingTeam (int defending_team)
 {
@@ -118,7 +112,7 @@ void BotSetDefendingTeam (int defending_team)
 }
 
 
-void BotSetGoal (int bot_index, botgoaltype_t goaltype, vec3_t position, const edict_t *target_ent, qboolean end_on_path_complete, int time_msec)
+void BotSetGoal (int bot_index, botgoaltype_t goaltype, const vec3_t position, const edict_t *target_ent, qboolean end_on_path_complete, int time_msec)
 {
 	botgoal_t *goal = bots.goals + bot_index;
 
