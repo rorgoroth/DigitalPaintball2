@@ -237,10 +237,15 @@ void BotFollowWaypoint (unsigned int bot_index, int msec)
 				movement->desired_angles[PITCH] = 15.0f;
 
 			// Take the current velocity into account -- move toward the objective based on where we'd be 0.15s in the future to help with overshooting.
+			if (false) // Disable this for now -- results in jerky movement
 			{
 				vec3_t origin_plus_velocity;
 				VectorMA(ent->s.origin, 0.15f, movement->velocity, origin_plus_velocity);
 				VectorSubtract(current_waypoint_pos, origin_plus_velocity, vec_diff);
+			}
+			else
+			{
+				VectorSubtract(current_waypoint_pos, ent->s.origin, vec_diff);
 			}
 
 			// Figure out where the target is relative to our current facing
@@ -650,14 +655,14 @@ qboolean BotSelectRandomPlayerPathAtPosition(int botindex, const vec3_t pos)
 		movement->path_info.index_in_path = 0;
 		movement->path_info.started = true;
 		if (bot_debug->value)
-			bi.dprintf("bot %d: Found %d paths at this position.  Randomly selecting path index %d", botindex, paths_found, pathindex);
+			bi.dprintf("bot %d: Found %d paths at this position.  Randomly selecting path index %d\n", botindex, paths_found, pathindex);
 		return true;
 	}
 	else
 	{
 		// Found no path, bot will wander aimlessly.
 		if (bot_debug->value)
-			bi.dprintf("Found no paths at spawn/teleport.");
+			bi.dprintf("bot %d: Found no paths at spawn/teleport.\n", botindex);
 		return false;
 	}
 }

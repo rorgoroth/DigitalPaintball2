@@ -58,6 +58,8 @@ void BotRunFrame (int msec, float level_time);
 qboolean BotCommand (edict_t *ent, const char *cmd, const char *cmd2, const char *cmd3, const char *cmd4);
 void BotExitLevel (void);
 void AddBot (const char *name, qboolean manually_added);
+qboolean IsBot (const edict_t *ent);
+int BotIndexFromEnt (const edict_t *ent);
 
 extern bot_import_t bi;
 
@@ -88,5 +90,9 @@ void BotSetDesiredAimAnglesFromPoint (int botindex, const vec3_t point);
 void VecToAngles (vec3_t value1, vec3_t angles);
 void VecToAnglesShort (vec3_t vec_val, short *angles_short);
 qboolean BotHasLineOfSightToEnt (int bot_index, const edict_t *target);
+
+// bot_commands.c
+void BotChat (int bot_index, const char *chat_string);
+
 
 #endif

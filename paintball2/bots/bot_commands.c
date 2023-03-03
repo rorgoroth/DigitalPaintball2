@@ -195,3 +195,30 @@ qboolean BotCommand (edict_t *ent, const char *cmd, const char *cmd2, const char
 
 	return false;
 }
+
+
+void BotUpdateChat (void)
+{
+	if (bots.chat_time_to_print > 0.0f && bots.level_time >= bots.chat_time_to_print)
+	{
+		if (bots.chat_bot_index < bots.count) // Just in case the bot was removed or something before the chat prints
+		{
+			char bot_command[MAX_STRING_CHARS];
+			Com_sprintf(bot_command, sizeof(bot_command), "say \"%s\"", bots.chat_string);
+			bi.BotCommand(bots.ents[bots.chat_bot_index], bot_command);
+		}
+
+		bots.chat_time_to_print = 0.0f;
+	}
+}
+
+
+void BotChat (int bot_index, const char *chat_string)
+{
+	if (bot_index >= 0 && bot_index < bots.count)
+	{
+		bots.chat_bot_index = bot_index;
+		bots.chat_time_to_print = bots.level_time + nu_rand(1.0f) + 0.5f;
+		Q_strncpyz(bots.chat_string, chat_string, sizeof(bots.chat_string));
+	}
+}

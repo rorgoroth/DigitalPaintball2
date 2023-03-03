@@ -54,6 +54,7 @@ void UpdatePlayerPosHistory(int msec);
 void RemoveBot (edict_t *ent, qboolean manually_removed);
 void BotUpdateWaypoints (void);
 void BotInitObservations (const char *mapname);
+void BotUpdateChat (void);
 
 
 void BotInitMap (const char *mapname, int game_mode)
@@ -254,6 +255,7 @@ void BotRunFrame (int msec, float level_time)
 	BotUpdateWaypoints();
 	UpdatePlayerPosHistory(msec);
 	BotUpdateConnections(msec);
+	BotUpdateChat();
 
 	// If one of the bot cvars changes, start auto-managing the bots again, in case the admin added/removed a bot, then changed a setting later.
 	if (bots_vs_humans->modified || bot_min_players->modified || bot_min_bots->modified)
@@ -416,4 +418,37 @@ void AddBot (const char *name, qboolean manually_added)
 	{
 		bi.dprintf("Failed to add bot.  Server full?  Try increasing maxclients.\n");
 	}
+}
+
+
+int BotIndexFromEnt (const edict_t *ent)
+{
+	int i;
+
+	for (i = 0; i < bots.count; ++i)
+	{
+		if (bots.ents[i] == ent)
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+
+// Untested:
+qboolean IsBot (const edict_t *ent)
+{
+	int i;
+
+	for (i = 0; i < bots.count; ++i)
+	{
+		if (bots.ents[i] == ent)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }

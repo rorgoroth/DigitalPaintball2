@@ -51,7 +51,7 @@ static void BotHandleDisconnect (const edict_t *ent)
 }
 
 
-void BotHandleFlagGrab (edict_t *flag, edict_t *player_ent)
+void BotHandleFlagGrab (edict_t *player_ent, edict_t *flag)
 {
 	int bot_index;
 
@@ -122,9 +122,70 @@ void BotHandleCap (edict_t *ent, edict_t *flag)
 }
 
 
+void BotHandleSuicide (edict_t *ent)
+{
+	int bot_index = BotIndexFromEnt(ent);
+
+	if (bot_index >= 0)
+	{
+		if (nu_rand(1.0) < 0.1f)
+		{
+			float r = nu_rand(1.0);
+			if (r < 0.5f)
+				BotChat(bot_index, "oops");
+			else
+				BotChat(bot_index, "poop.");
+			return;
+		}
+	}
+
+	// Laugh at whoever had the accident, maybe
+	if (nu_rand(1.0) < 0.1f)
+	{
+		if (bots.count > 0)
+		{
+			int bot_index = (int)nu_rand(bots.count);
+			float r = nu_rand(1.0);
+			if (r < 0.2f)
+				BotChat(bot_index, "gj");
+			else if (r < 0.4f)
+				BotChat(bot_index, "smooth.");
+			else
+				BotChat(bot_index, "lol");
+		}
+	}
+}
+
+
 void BotHandleKill (edict_t *victim, edict_t *inflictor, edict_t *killer)
 {
 	BotCancelObservation(victim);
+
+	if (victim == killer || !killer || !killer->client)
+	{
+		BotHandleSuicide(victim);
+	}
+	else
+	{
+		// Actual kill
+		if (nu_rand(1.0f) < 0.05f) // 1 in 20 chance of saying something
+		{
+			int bot_index = BotIndexFromEnt(victim);
+
+			if (bot_index >= 0)
+			{
+				float r = nu_rand(1.0f);
+				if (r < 0.01)
+					BotChat(bot_index, "luck.");
+				else if (r < 0.2)
+					BotChat(bot_index, "Nice one!");
+				else if (r < 0.3)
+					BotChat(bot_index, "ow.");
+				else
+					BotChat(bot_index, "ns");
+			}
+		}
+	}
 }
 
 

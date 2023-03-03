@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef _BOT_IMPORTEXPORT_H_
 #define _BOT_IMPORTEXPORT_H_
 
-#define BOT_API_VERSION 6
+#define BOT_API_VERSION 7
 
 typedef enum {
 	BOT_OBJECTIVE_TYPE_UNSET = 0,
@@ -101,6 +101,7 @@ typedef struct
 	int			(*GetNumPlayersTotal) (); // Number of players (including bots), includes observers.
 	int			(*GetTeam) (const edict_t *ent);
 	edict_t		*(*GetNextPlayerEnt) (edict_t *ent, qboolean ignore_bots);
+	void		(*BotCommand) (edict_t *ent, const char *command_string); // Execute a command, such as "say" or "tossgren"
 
 	// Block of unset data that will be zeroed out, in case of API changes, this will make new function pointers null,
 	// so crashes will be more obvious.

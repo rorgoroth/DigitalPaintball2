@@ -77,6 +77,11 @@ typedef struct botmanager_s {
 	int					goal_debug_spheres[MAX_BOTS];
 	char				names_to_readd[MAX_BOTS][64]; // bots to re-add after map change
 
+	// Chat stuff.  For now, just let 1 bot at a time chat, as that will help avoid spam.
+	int					chat_bot_index;
+	float				chat_time_to_print;
+	char				chat_string[MAX_STRING_CHARS];
+
 	int					count; // total number of bots currently in the map
 	int					num_to_readd; // number of bots to re-add
 	float				level_time;
